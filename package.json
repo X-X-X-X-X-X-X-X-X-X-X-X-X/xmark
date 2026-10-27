@@ -2,8 +2,9 @@
   "name": "xmark",
   "displayName": "%xmark.displayName%",
   "description": "%xmark.description%",
-  "version": "0.1.0",
+  "version": "0.1.2",
   "publisher": "xxc",
+  "icon": "resources/icon.png",
   "engines": {
     "vscode": "^1.85.0"
   },
@@ -21,7 +22,7 @@
         {
           "id": "xmark-container",
           "title": "%xmark.container.title%",
-          "icon": "resources/bookmark.svg"
+          "icon": "resources/activitybar.svg"
         }
       ]
     },
@@ -30,7 +31,7 @@
         {
           "id": "xmarkBookmarkView",
           "name": "%xmark.view.title%",
-          "icon": "resources/bookmark.svg"
+          "icon": "resources/activitybar.svg"
         }
       ]
     },
@@ -164,6 +165,10 @@
         }
       }
     }
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/X-X-X-X-X-X-X-X-X-X-X-X-X/xmark.git"
   },
   "scripts": {
     "vscode:prepublish": "npm run build",
