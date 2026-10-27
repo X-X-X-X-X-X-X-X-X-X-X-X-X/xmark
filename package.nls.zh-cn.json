@@ -1,0 +1,18 @@
+{
+  "xmark.displayName": "XMark - AI 代码书签",
+  "xmark.description": "专为人类与 AI 协同设计的代码书签 VS Code 插件，支持分组、拖拽、行号区图标、代码漂移检测及通用 JSON 存储。",
+  "xmark.container.title": "XMark 代码书签",
+  "xmark.view.title": "书签列表",
+  "xmark.welcome.noWorkspace": "当前尚未打开任何工作区，书签功能不可用。\n[打开文件夹](command:vscode.openFolder)",
+  "xmark.command.addBookmark": "XMark: 添加书签",
+  "xmark.command.refreshView": "刷新书签列表",
+  "xmark.command.addGroup": "新建书签分组",
+  "xmark.command.renameGroup": "重命名分组",
+  "xmark.command.deleteGroup": "删除分组",
+  "xmark.command.setDefaultGroup": "设为默认分组",
+  "xmark.command.renameBookmark": "重命名书签",
+  "xmark.command.deleteBookmark": "删除书签",
+  "xmark.command.updateBookmarkToCurrent": "更新为当前位置/Commit",
+  "xmark.configuration.title": "XMark 代码书签配置",
+  "xmark.configuration.storageLocation.description": "书签存储文件 (bookmark.json) 存放位置：'.vscode' 目录或工作区根目录 'root'。"
+}

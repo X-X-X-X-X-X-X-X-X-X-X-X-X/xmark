@@ -1,0 +1,183 @@
+{
+  "name": "xmark",
+  "displayName": "%xmark.displayName%",
+  "description": "%xmark.description%",
+  "version": "0.1.0",
+  "publisher": "xxc",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "l10n": "./l10n",
+  "main": "./dist/extension.js",
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "xmark-container",
+          "title": "%xmark.container.title%",
+          "icon": "resources/bookmark.svg"
+        }
+      ]
+    },
+    "views": {
+      "xmark-container": [
+        {
+          "id": "xmarkBookmarkView",
+          "name": "%xmark.view.title%",
+          "icon": "resources/bookmark.svg"
+        }
+      ]
+    },
+    "viewsWelcome": [
+      {
+        "view": "xmarkBookmarkView",
+        "contents": "%xmark.welcome.noWorkspace%",
+        "when": "workspaceFolderCount == 0"
+      }
+    ],
+    "commands": [
+      {
+        "command": "xmark.addBookmark",
+        "title": "%xmark.command.addBookmark%",
+        "icon": "$(bookmark)"
+      },
+      {
+        "command": "xmark.refreshView",
+        "title": "%xmark.command.refreshView%",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "xmark.addGroup",
+        "title": "%xmark.command.addGroup%",
+        "icon": "$(add)"
+      },
+      {
+        "command": "xmark.renameGroup",
+        "title": "%xmark.command.renameGroup%",
+        "icon": "$(edit)"
+      },
+      {
+        "command": "xmark.deleteGroup",
+        "title": "%xmark.command.deleteGroup%",
+        "icon": "$(trash)"
+      },
+      {
+        "command": "xmark.setDefaultGroup",
+        "title": "%xmark.command.setDefaultGroup%",
+        "icon": "$(star)"
+      },
+      {
+        "command": "xmark.renameBookmark",
+        "title": "%xmark.command.renameBookmark%",
+        "icon": "$(edit)"
+      },
+      {
+        "command": "xmark.deleteBookmark",
+        "title": "%xmark.command.deleteBookmark%",
+        "icon": "$(trash)"
+      },
+      {
+        "command": "xmark.updateBookmarkToCurrent",
+        "title": "%xmark.command.updateBookmarkToCurrent%",
+        "icon": "$(sync)"
+      }
+    ],
+    "menus": {
+      "editor/lineNumber/context": [
+        {
+          "command": "xmark.addBookmark",
+          "group": "1_modification@1"
+        },
+        {
+          "command": "xmark.renameBookmark",
+          "when": "editorLineNumber in xmark.bookmarkedLines",
+          "group": "1_modification@2"
+        },
+        {
+          "command": "xmark.deleteBookmark",
+          "when": "editorLineNumber in xmark.bookmarkedLines",
+          "group": "1_modification@3"
+        }
+      ],
+      "view/title": [
+        {
+          "command": "xmark.addGroup",
+          "when": "view == xmarkBookmarkView && workspaceFolderCount > 0",
+          "group": "navigation@1"
+        },
+        {
+          "command": "xmark.refreshView",
+          "when": "view == xmarkBookmarkView && workspaceFolderCount > 0",
+          "group": "navigation@2"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "xmark.setDefaultGroup",
+          "when": "view == xmarkBookmarkView && viewItem == group",
+          "group": "inline@1"
+        },
+        {
+          "command": "xmark.renameGroup",
+          "when": "view == xmarkBookmarkView && (viewItem == group || viewItem == group:default)",
+          "group": "inline@2"
+        },
+        {
+          "command": "xmark.deleteGroup",
+          "when": "view == xmarkBookmarkView && viewItem == group",
+          "group": "inline@3"
+        },
+        {
+          "command": "xmark.renameBookmark",
+          "when": "view == xmarkBookmarkView && viewItem =~ /^bookmark/",
+          "group": "inline@1"
+        },
+        {
+          "command": "xmark.deleteBookmark",
+          "when": "view == xmarkBookmarkView && viewItem =~ /^bookmark/",
+          "group": "inline@2"
+        },
+        {
+          "command": "xmark.updateBookmarkToCurrent",
+          "when": "view == xmarkBookmarkView && viewItem == bookmark:drifted",
+          "group": "1_modification"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "%xmark.configuration.title%",
+      "properties": {
+        "xmark.storageLocation": {
+          "type": "string",
+          "enum": [
+            "vscode",
+            "root"
+          ],
+          "default": "vscode",
+          "description": "%xmark.configuration.storageLocation.description%"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run build",
+    "compile": "tsc -p ./ --noEmit",
+    "watch": "tsc -watch -p ./",
+    "build": "node esbuild.js",
+    "package": "vsce package",
+    "publish": "vsce publish"
+  },
+  "devDependencies": {
+    "@types/node": "^20.17.19",
+    "@types/vscode": "^1.85.0",
+    "@vscode/vsce": "^4.0.0",
+    "esbuild": "^0.25.0",
+    "typescript": "^5.7.3"
+  }
+}

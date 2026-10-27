@@ -1,0 +1,18 @@
+{
+  "xmark.displayName": "XMark - AI Code Bookmark",
+  "xmark.description": "AI & Human collaborative code bookmark tool with grouping, drag-and-drop, gutter icons, code drift detection, and universal JSON storage.",
+  "xmark.container.title": "XMark Bookmarks",
+  "xmark.view.title": "Bookmarks",
+  "xmark.welcome.noWorkspace": "No workspace folder is currently open. Bookmarks are unavailable.\n[Open Folder](command:vscode.openFolder)",
+  "xmark.command.addBookmark": "XMark: Add Bookmark",
+  "xmark.command.refreshView": "Refresh Bookmarks",
+  "xmark.command.addGroup": "New Bookmark Group",
+  "xmark.command.renameGroup": "Rename Group",
+  "xmark.command.deleteGroup": "Delete Group",
+  "xmark.command.setDefaultGroup": "Set as Default Group",
+  "xmark.command.renameBookmark": "Rename Bookmark",
+  "xmark.command.deleteBookmark": "Delete Bookmark",
+  "xmark.command.updateBookmarkToCurrent": "Update to Current Position/Commit",
+  "xmark.configuration.title": "XMark Code Bookmark",
+  "xmark.configuration.storageLocation.description": "Bookmark storage file (bookmark.json) location: '.vscode' directory or workspace 'root'."
+}
