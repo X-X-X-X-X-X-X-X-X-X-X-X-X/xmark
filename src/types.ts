@@ -46,14 +46,10 @@ export interface IBookmarkStorageSchema {
 }
 
 export interface IDriftStatus {
-  /** 是否存在任何代码漂移或变更 */
+  /** 是否存在代码内容变动 */
   hasChanged: boolean;
-  /** Git Commit Hash 是否已变动 */
-  commitChanged: boolean;
   /** 该行内容的 Hash 是否不匹配 */
   contentChanged: boolean;
-  /** 当前最新的 Commit Hash */
-  currentCommit: string;
 }
 
 export const DEFAULT_GROUP_ID = 'default';

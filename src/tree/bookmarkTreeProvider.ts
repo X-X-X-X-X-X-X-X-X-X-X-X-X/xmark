@@ -58,8 +58,7 @@ export class BookmarkTreeProvider implements vscode.TreeDataProvider<XMarkTreeIt
       const items: BookmarkTreeItem[] = [];
       for (const bm of bookmarks) {
         const fileUri = this.storage.resolveFileUri(bm.filePath);
-        const headCommit = await this.git.getHeadCommit(fileUri);
-        const drift = await checkBookmarkDrift(bm, headCommit, fileUri);
+        const drift = await checkBookmarkDrift(bm, fileUri);
         items.push(new BookmarkTreeItem(bm, drift, fileUri, this.extensionUri));
       }
       return items;

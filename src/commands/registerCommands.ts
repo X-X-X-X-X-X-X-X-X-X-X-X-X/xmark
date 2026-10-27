@@ -532,7 +532,7 @@ export function registerBookmarkCommands(
     })
   );
 
-  // 8. 更新书签状态为当前位置/Commit (针对漂移书签)
+  // 8. 更新书签状态为当前行代码内容 (针对内容变动书签)
   context.subscriptions.push(
     vscode.commands.registerCommand('xmark.updateBookmarkToCurrent', async (item?: BookmarkTreeItem) => {
       if (!item) {
@@ -551,7 +551,7 @@ export function registerBookmarkCommands(
 
       vscode.window.showInformationMessage(
         vscode.l10n.t(
-          'Bookmark [{0}] has been synchronized with the current Git commit and line status',
+          'Bookmark [{0}] has been synchronized with the current line content',
           bm.name
         )
       );

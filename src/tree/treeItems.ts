@@ -64,21 +64,9 @@ export class BookmarkTreeItem extends vscode.TreeItem {
           );
       this.description = `${bookmark.filePath}:${bookmark.line} ${vscode.l10n.t('[Changed]')}`;
 
-      const reasons: string[] = [];
-      if (drift.commitChanged) {
-        reasons.push(
-          `- ${vscode.l10n.t(
-            'Git commit changed (Recorded: `{0}` -> Current: `{1}`)',
-            bookmark.commit.slice(0, 7) || 'none',
-            drift.currentCommit.slice(0, 7) || 'none'
-          )}`
-        );
-      }
-      if (drift.contentChanged) {
-        reasons.push(`- ${vscode.l10n.t('Code content hash mismatch')}`);
-      }
+      const reason = `- ${vscode.l10n.t('Code content hash mismatch')}`;
       this.tooltip = new vscode.MarkdownString(
-        `⚠️ **${vscode.l10n.t('Code may have changed')}**\n\n${reasons.join('\n')}\n\n*${vscode.l10n.t(
+        `⚠️ **${vscode.l10n.t('Code may have changed')}**\n\n${reason}\n\n*${vscode.l10n.t(
           'File: {0} (Line {1})',
           bookmark.filePath,
           bookmark.line

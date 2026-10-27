@@ -112,28 +112,23 @@ export async function getLineContent(filePath: string, targetLine: number, targe
 }
 
 /*
- * 《核心位置》：检测书签与当前环境的漂移状态 (支持多工作区)
+ * 《核心位置》：检测书签与当前环境的代码内容漂移状态 (支持多工作区)
  * 逻辑解释：
- * 1. 比对当前 Git HEAD Commit 与书签录入时的 commit。
- * 2. 比对当前文件的目标行 Hash 与记录时的 lineHash。
- * 3. 严格遵循“不进行任何自动纠偏移动”的准则，仅返回状态布尔值。
+ * 1. 纯基于内容 Hash (lineHash) 进行对比，彻底移除粗粒度的 Git Commit 对比。
+ * 2. 避免无关文件的 Git 提交导致项目中所有书签被错误标记为“已变更”。
+ * 3. 只有当目标行的实际代码内容被修改（Hash 不一致）时，才触发变动告警。
+ * 隐患点：若目标文件已被删除或无法读取，将默认判定为变动（Hash 不匹配）。
  */
 export async function checkBookmarkDrift(
   bm: IBookmark,
-  currentHeadCommit: string,
   targetFileUri?: vscode.Uri
 ): Promise<IDriftStatus> {
-  const commitChanged = Boolean(bm.commit && currentHeadCommit && bm.commit !== currentHeadCommit);
-  let contentChanged = false;
-
   const currentContent = await getLineContent(bm.filePath, bm.line, targetFileUri);
   const currentHash = computeLineHash(currentContent);
-  contentChanged = bm.lineHash !== currentHash;
+  const contentChanged = bm.lineHash !== currentHash;
 
   return {
-    hasChanged: commitChanged || contentChanged,
-    commitChanged,
-    contentChanged,
-    currentCommit: currentHeadCommit
+    hasChanged: contentChanged,
+    contentChanged
   };
 }

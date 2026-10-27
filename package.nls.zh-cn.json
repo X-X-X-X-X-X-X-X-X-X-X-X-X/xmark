@@ -12,7 +12,7 @@
   "xmark.command.setDefaultGroup": "设为默认分组",
   "xmark.command.renameBookmark": "重命名书签",
   "xmark.command.deleteBookmark": "删除书签",
-  "xmark.command.updateBookmarkToCurrent": "更新为当前位置/Commit",
+  "xmark.command.updateBookmarkToCurrent": "更新为当前代码行内容",
   "xmark.configuration.title": "XMark 代码书签配置",
   "xmark.configuration.storageLocation.description": "书签存储文件 (bookmark.json) 存放位置：'.vscode' 目录或工作区根目录 'root'。"
 }

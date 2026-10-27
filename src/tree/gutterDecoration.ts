@@ -108,7 +108,6 @@ export class GutterDecorationManager implements vscode.Disposable {
       return;
     }
 
-    const currentHeadCommit = await this.git.getHeadCommit(docUri);
     const normalDecorations: vscode.DecorationOptions[] = [];
     const warningDecorations: vscode.DecorationOptions[] = [];
     const normalMultipleDecorations: vscode.DecorationOptions[] = [];
@@ -139,10 +138,10 @@ export class GutterDecorationManager implements vscode.Disposable {
 
       const range = new vscode.Range(lineIndex, 0, lineIndex, 0);
 
-      // 并行检测当前行所有书签的变动状态
+      // 并行检测当前行所有书签的内容变动状态 (纯基于 lineHash)
       const driftResults = await Promise.all(
         lineBookmarks.map(async (bm) => {
-          const drift = await checkBookmarkDrift(bm, currentHeadCommit, docUri);
+          const drift = await checkBookmarkDrift(bm, docUri);
           return { bm, drift };
         })
       );
@@ -153,25 +152,13 @@ export class GutterDecorationManager implements vscode.Disposable {
         // 单书签模式：使用标准书签或标准告警图标
         const { bm, drift } = driftResults[0];
         if (drift.hasChanged) {
-          const reason: string[] = [];
-          if (drift.commitChanged) {
-            reason.push(
-              `- ${vscode.l10n.t(
-                'Git commit changed (Recorded: `{0}` -> Current: `{1}`)',
-                bm.commit.slice(0, 7) || 'none',
-                currentHeadCommit.slice(0, 7) || 'none'
-              )}`
-            );
-          }
-          if (drift.contentChanged) {
-            reason.push(`- ${vscode.l10n.t('Code content hash mismatch')}`);
-          }
+          const reason = `- ${vscode.l10n.t('Code content hash mismatch')}`;
 
           const md = new vscode.MarkdownString(
             `⚠️ **${vscode.l10n.t(
               'XMark Bookmark: {0} [Code may have changed]',
               bm.name
-            )}**\n\n${reason.join('\n')}\n\n*${vscode.l10n.t(
+            )}**\n\n${reason}\n\n*${vscode.l10n.t(
               'Clicking bookmark still jumps to line {0}',
               bm.line
             )}*`
