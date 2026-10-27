@@ -10,7 +10,69 @@ import {
 } from '../types.js';
 
 const DEFAULT_INSTRUCTIONS =
-  '【XMark AI 操作指南】1. 请勿删除此字段与 groups 中的 default 分组；2. 新增书签的 groupId 必须匹配 groups 中的 id；3. filePath 必须使用 POSIX 正斜杠 /；4. lineHash 为目标行去除首尾空格后的 16 位 SHA-256 Hash 值；5. 行号 line 为 1-based 正整数。';
+  '【XMark AI 操作指南 / AI Agent Guidelines】1. 请勿删除此字段与 groups 中的 default 分组；2. 新增书签的 groupId 必须匹配 groups 中的 id；3. filePath 必须使用 POSIX 正斜杠 /；4. lineHash 为目标行去除首尾空格后的 16 位 SHA-256 Hash 值；5. 行号 line 为 1-based 正整数；6. 详尽规范与多书签实例文档请参考同目录下的 bookmark.example.json。';
+
+const EXAMPLE_BOOKMARK_CONTENT = JSON.stringify(
+  {
+    _instructions:
+      '【XMark AI 操作指南 / AI Agent Guidelines】\n1. 角色定位：此文件为 VS Code 扩展 XMark 的书签存储协议示例文件，供人类开发者与 AI 协同编辑代码时参考。\n2. 结构契约：\n   - version: 必须为 1。\n   - defaultGroupId: 默认分组 ID，必须存在于 groups 列表中（默认为 "default"）。\n   - groups: 分组列表，每组包含唯一 id、显示名 name 及排序权重 order。\n   - bookmarks: 书签列表，每个书签必须严格包含合法字段。\n3. 字段规则约束：\n   - id: 唯一字符串，推荐格式 "bm_<时间戳>_<随机4位字符>"。\n   - groupId: 必须匹配 groups 中的某个分组 id。\n   - filePath: 相对路径，统一必须使用 POSIX 正斜杠 "/"，严禁包含 Windows 反斜杠 "\\\\"。\n   - line: 1-based 正整数（行号从 1 开始）。\n   - commit: 记录书签时的 Git Commit Hash（如无法获取填空字符串 ""）。\n   - lineHash: 目标行代码去除首尾空白（trim）后，执行 SHA-256 计算所得的前 16 位小写十六进制字符串，用于检测代码漂移。\n   - order: 组内排序权重，整数升序排列。\n   - createdAt: 创建时间戳（13位毫秒数）。\n4. 单行多书签规则：同一行代码可归属于不同分组（即不同 groupId 可以有相同的 filePath 与 line），但同一分组内相同行不可重复添加。\n5. AI 自动写入：AI 可直接读写同目录下的 bookmark.json 文件添加书签，保存后插件将自动热重载并在编辑器行号区实时高亮。',
+    version: 1,
+    defaultGroupId: 'default',
+    groups: [
+      { id: 'default', name: '默认分组', order: 0 },
+      { id: 'group_feature_auth', name: '用户认证模块', order: 1 },
+      { id: 'group_perf_optim', name: '性能优化候选点', order: 2 }
+    ],
+    bookmarks: [
+      {
+        id: 'bm_1740645001000_a1b2',
+        groupId: 'default',
+        name: '服务初始化生命周期挂载',
+        filePath: 'src/extension.ts',
+        line: 18,
+        commit: '904419b138e62d4e8bb9b1f062d193ad4f9b8832',
+        lineHash: '7f8b9c0d1e2f3a4b',
+        order: 0,
+        createdAt: 1740645001000
+      },
+      {
+        id: 'bm_1740645002000_c3d4',
+        groupId: 'group_feature_auth',
+        name: 'JWT 核心验签与权限判定入口',
+        filePath: 'src/services/authService.ts',
+        line: 42,
+        commit: '904419b138e62d4e8bb9b1f062d193ad4f9b8832',
+        lineHash: 'a1b2c3d4e5f60718',
+        order: 0,
+        createdAt: 1740645002000
+      },
+      {
+        id: 'bm_1740645003000_e5f6',
+        groupId: 'group_perf_optim',
+        name: '【单行多书签示例】验签逻辑存在高频磁盘查库，需改为 Redis 缓存',
+        filePath: 'src/services/authService.ts',
+        line: 42,
+        commit: '904419b138e62d4e8bb9b1f062d193ad4f9b8832',
+        lineHash: 'a1b2c3d4e5f60718',
+        order: 0,
+        createdAt: 1740645003000
+      },
+      {
+        id: 'bm_1740645004000_g7h8',
+        groupId: 'group_feature_auth',
+        name: 'OAuth2 回调状态码解析',
+        filePath: 'src/services/authService.ts',
+        line: 108,
+        commit: '904419b138e62d4e8bb9b1f062d193ad4f9b8832',
+        lineHash: '3c4d5e6f7a8b9c0d',
+        order: 1,
+        createdAt: 1740645004000
+      }
+    ]
+  },
+  null,
+  2
+);
 
 /*
  * 《核心位置》：书签数据持久化与外部同步管理器 (全面支持多工作区 Multi-root Workspace)
@@ -121,6 +183,35 @@ export class StorageManager implements vscode.Disposable {
   }
 
   /**
+   * 《核心位置》：确保同目录下存在供 AI 读取的 bookmark.example.json 示例规范文件
+   * 逻辑解释：
+   * 1. 当存储目录初始化（或初次加载）时，自动检测同级目录下是否存在 bookmark.example.json。
+   * 2. 若不存在，则自动生成该文件，内嵌完整字段解释、AI 操作指令与单行多书签示例。
+   * 3. 避免覆盖用户可能自定义修改过的 example 文件。
+   * 隐患点：需使用 fs.access 检测，避免 ENOENT 抛出未捕获异常。
+   */
+  public async ensureExampleFile(): Promise<void> {
+    const storageUri = this.getStorageUri();
+    if (!storageUri) {
+      return;
+    }
+
+    const dir = path.dirname(storageUri.fsPath);
+    const examplePath = path.join(dir, 'bookmark.example.json');
+
+    try {
+      await fs.access(examplePath);
+    } catch {
+      try {
+        await fs.mkdir(dir, { recursive: true });
+        await fs.writeFile(examplePath, EXAMPLE_BOOKMARK_CONTENT, 'utf-8');
+      } catch (err) {
+        console.warn('[XMark] 生成 bookmark.example.json 失败:', err);
+      }
+    }
+  }
+
+  /**
    * 从磁盘加载并规范化数据
    */
   public async loadFromDisk(): Promise<void> {
@@ -128,6 +219,9 @@ export class StorageManager implements vscode.Disposable {
     if (!storageUri) {
       return;
     }
+
+    // 无论 bookmark.json 是否存在，均自动同步确保同级目录下具备 AI 友好的 bookmark.example.json
+    await this.ensureExampleFile();
 
     try {
       const content = await fs.readFile(storageUri.fsPath, 'utf-8');
