@@ -2,7 +2,8 @@ import * as vscode from 'vscode';
 import { StorageManager } from '../services/storageManager.js';
 import { GitService } from '../services/gitService.js';
 import { computeLineHash, getLineContent } from '../services/driftChecker.js';
-import { BookmarkTreeItem, GroupTreeItem } from '../tree/treeItems.js';
+import { BookmarkTreeItem, GroupTreeItem, XMarkTreeItem } from '../tree/treeItems.js';
+import { BookmarkTreeProvider } from '../tree/bookmarkTreeProvider.js';
 import { DEFAULT_GROUP_ID, IBookmark, IBookmarkGroup } from '../types.js';
 
 /**
@@ -84,7 +85,9 @@ function updateEditorBookmarkedLines(
 export function registerBookmarkCommands(
   context: vscode.ExtensionContext,
   storage: StorageManager,
-  git: GitService
+  git: GitService,
+  treeView?: vscode.TreeView<XMarkTreeItem>,
+  treeProvider?: BookmarkTreeProvider
 ): void {
   // 监听编辑器切换、文档编辑及存储变动，即时刷新行号集合
   context.subscriptions.push(
@@ -551,6 +554,68 @@ export function registerBookmarkCommands(
           bm.name
         )
       );
+    })
+  );
+
+  /*
+   * 《核心位置》：行号区右键定位书签并在侧边栏树视图高亮 (单书签直达，多书签弹窗选择)
+   * 逻辑解释：
+   * 1. 提取当前行号右键上下文 (arg) 或活动编辑器位置，查询该代码行关联的所有书签。
+   * 2. 若无书签直接安全退出；若仅有单书签，直接选定为目标书签。
+   * 3. 若存在多个书签，弹出 QuickPick 弹窗展示书签名及其归属分组名称，供用户选择要定位的具体书签。
+   * 4. 通过 treeProvider.findBookmarkTreeItem 找到对应的节点实例，并调用 treeView.reveal 高亮、展开并聚焦该书签。
+   * 隐患点：
+   * 1. 用户在多书签弹窗中按 ESC 取消时，需提前返回，避免触发未选中错误。
+   * 2. 需防范 treeView 或 treeProvider 尚未初始化的边界场景。
+   */
+  context.subscriptions.push(
+    vscode.commands.registerCommand('xmark.locateBookmark', async (arg?: any) => {
+      let targetBookmark: IBookmark | undefined;
+
+      if (arg instanceof BookmarkTreeItem) {
+        targetBookmark = arg.bookmark;
+      } else {
+        const { uri, line } = getContextTarget(arg);
+        if (!uri || !line) {
+          return;
+        }
+
+        const bookmarks = findBookmarksAtPosition(storage, uri, line);
+        if (bookmarks.length === 0) {
+          return;
+        }
+
+        if (bookmarks.length === 1) {
+          targetBookmark = bookmarks[0];
+        } else {
+          const pickItems = bookmarks.map((bm) => {
+            const group = storage.getGroups().find((g) => g.id === bm.groupId);
+            const groupName = getGroupDisplayName(group) || bm.groupId;
+            return {
+              label: `$(bookmark) ${bm.name}`,
+              description: `[${groupName}]`,
+              bookmark: bm
+            };
+          });
+
+          const selected = await vscode.window.showQuickPick(pickItems, {
+            placeHolder: vscode.l10n.t('Multiple bookmarks on this line. Select one to locate:'),
+            title: vscode.l10n.t('Locate Bookmark (Line {0})', line)
+          });
+
+          if (!selected) {
+            return;
+          }
+          targetBookmark = selected.bookmark;
+        }
+      }
+
+      if (targetBookmark && treeView && treeProvider) {
+        const item = await treeProvider.findBookmarkTreeItem(targetBookmark.id);
+        if (item) {
+          await treeView.reveal(item, { select: true, focus: true, expand: true });
+        }
+      }
     })
   );
 }

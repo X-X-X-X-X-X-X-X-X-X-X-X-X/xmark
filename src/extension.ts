@@ -29,7 +29,7 @@ export function activate(context: vscode.ExtensionContext): void {
     showCollapseAll: true
   });
 
-  registerBookmarkCommands(context, storage, git);
+  registerBookmarkCommands(context, storage, git, treeView, treeProvider);
 
   context.subscriptions.push(
     storage,

@@ -54,7 +54,6 @@
 
 - 🌍 **真正通用的 AI 协同 (Zero Lock-in & 开放契约)**
   - 核心存储依托完全公开、规范的 `bookmark.json`，内置自然语言契约说明（`_instructions`）；
-  - 自动生成完备的 `bookmark.example.json` 示例模板，帮助 AI 快速理解字段约束；
   - **零平台绑定**：适配任意具备文件读写能力的 AI 工具（Cursor、Copilot、Claude Code、Windsurf、本地 LLM Agent 等）；
   - 内置 `FileSystemWatcher` 与防抖写锁，外部 AI 写入更新后，VS Code 侧边栏与行号区秒级热重载。
 
@@ -105,7 +104,6 @@ flowchart TD
 
     subgraph SG_Storage["标准化存储契约"]
         File_JSON["bookmark.json: 存储真实书签与 AI 操作指南"]
-        File_Example["bookmark.example.json: 规范参考示例"]
     end
 
     subgraph SG_AI["AI 编程助手"]
@@ -123,7 +121,6 @@ flowchart TD
     UI_Tree -->|点击跳转代码| UI_Gutter
 
     Agent -->|任务规划后直接写入| File_JSON
-    Agent -.->|读取参考规范| File_Example
     File_JSON -->|提供上下文锚点| Agent
 ```
 
@@ -153,7 +150,7 @@ flowchart TD
 
 ```json
 {
-  "_instructions": "【XMark AI 操作指南】1. 请勿删除此字段与 groups 中的 default 分组；2. 新增书签的 groupId 必须匹配 groups 中的 id；3. filePath 必须使用 POSIX 正斜杠 /；4. lineHash 为目标行去除首尾空格后的 16 位 SHA-256 Hash 值；5. 行号 line 为 1-based 正整数；6. 详尽规范与多书签实例文档请参考同目录下的 bookmark.example.json。",
+  "_instructions": "【XMark AI 操作指南】1. 请勿删除此字段与 groups 中的 default 分组；2. 新增书签的 groupId 必须匹配 groups 中的 id；3. filePath 必须使用 POSIX 正斜杠 /；4. lineHash 为目标行去除首尾空格后的 16 位 SHA-256 Hash 值；5. 行号 line 为 1-based 正整数。",
   "version": 1,
   "defaultGroupId": "default",
   "groups": [

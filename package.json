@@ -87,6 +87,11 @@
         "command": "xmark.updateBookmarkToCurrent",
         "title": "%xmark.command.updateBookmarkToCurrent%",
         "icon": "$(sync)"
+      },
+      {
+        "command": "xmark.locateBookmark",
+        "title": "%xmark.command.locateBookmark%",
+        "icon": "$(target)"
       }
     ],
     "menus": {
@@ -96,14 +101,19 @@
           "group": "1_modification@1"
         },
         {
-          "command": "xmark.renameBookmark",
+          "command": "xmark.locateBookmark",
           "when": "editorLineNumber in xmark.bookmarkedLines",
           "group": "1_modification@2"
         },
         {
-          "command": "xmark.deleteBookmark",
+          "command": "xmark.renameBookmark",
           "when": "editorLineNumber in xmark.bookmarkedLines",
           "group": "1_modification@3"
+        },
+        {
+          "command": "xmark.deleteBookmark",
+          "when": "editorLineNumber in xmark.bookmarkedLines",
+          "group": "1_modification@4"
         }
       ],
       "view/title": [

@@ -53,6 +53,7 @@
   "Group [{0}] already has a bookmark on this line: [{1}]": "Group [{0}] already has a bookmark on this line: [{1}]",
   "XMark: {0} bookmarks on Line {1}": "XMark: {0} bookmarks on Line {1}",
   "XMark: {0} bookmarks on Line {1} [Some code may have changed]": "XMark: {0} bookmarks on Line {1} [Some code may have changed]",
-  "Right-click line number to manage or add bookmarks": "Right-click line number to manage or add bookmarks"
+  "Right-click line number to manage or add bookmarks": "Right-click line number to manage or add bookmarks",
+  "Multiple bookmarks on this line. Select one to locate:": "Multiple bookmarks on this line. Select one to locate:",
+  "Locate Bookmark (Line {0})": "Locate Bookmark (Line {0})"
 }
-

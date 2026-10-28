@@ -14,5 +14,6 @@
   "xmark.command.deleteBookmark": "Delete Bookmark",
   "xmark.command.updateBookmarkToCurrent": "Update to Current Line Content",
   "xmark.configuration.title": "XMark Code Bookmark",
-  "xmark.configuration.storageLocation.description": "Bookmark storage file (bookmark.json) location: '.vscode' directory or workspace 'root'."
+  "xmark.configuration.storageLocation.description": "Bookmark storage file (bookmark.json) location: '.vscode' directory or workspace 'root'.",
+  "xmark.command.locateBookmark": "Locate Bookmark"
 }

@@ -53,6 +53,7 @@
   "Group [{0}] already has a bookmark on this line: [{1}]": "分组 [{0}] 在当前行已存在书签：[{1}]",
   "XMark: {0} bookmarks on Line {1}": "XMark: 第 {1} 行包含 {0} 个书签",
   "XMark: {0} bookmarks on Line {1} [Some code may have changed]": "XMark: 第 {1} 行包含 {0} 个书签 [部分代码可能已变动]",
-  "Right-click line number to manage or add bookmarks": "右键行号区可管理或继续添加书签"
+  "Right-click line number to manage or add bookmarks": "右键行号区可管理或继续添加书签",
+  "Multiple bookmarks on this line. Select one to locate:": "当前行存在多个书签，请选择要定位的书签：",
+  "Locate Bookmark (Line {0})": "定位书签 (第 {0} 行)"
 }
-
