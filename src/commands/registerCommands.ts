@@ -143,7 +143,7 @@ export function registerBookmarkCommands(
        * 《核心位置》：极速单弹窗添加书签交互 (放开单行多书签限制，同组排重)
        * 逻辑解释：
        * 1. 解除单行仅限一个书签的限制，允许同一行代码根据不同业务意图归属到不同分组中。
-       * 2. 智能预选分组：若默认分组在该行尚未打书签，优先预选默认分组；若已打书签，则智能挑选该行尚未归属的分组。
+       * 2. 预选分组策略：无论当前行是否已有书签，默认目标分组与组选择弹窗均统一稳定预选系统默认分组 (defaultGroupId)，杜绝非预期跳组。
        * 3. 切换分组列表直观提示已打书签状态：分组列表中对当前行已存在书签的分组打上标示 (当前行已有书签)。
        * 4. 同组排重保护：若在同一行、同一分组下重复添加，弹窗警告并保持输入框不销毁，防止误操作或覆盖。
        * 5. 回车秒级入库：预填当前行代码摘要，一键回车即可入库。
@@ -155,13 +155,9 @@ export function registerBookmarkCommands(
       const defaultGroupId = storage.getDefaultGroupId();
       const allGroups = storage.getGroups();
 
-      let currentGroup: IBookmarkGroup;
-      if (!existingGroupIds.has(defaultGroupId)) {
-        currentGroup = allGroups.find((g) => g.id === defaultGroupId) || allGroups[0];
-      } else {
-        const unusedGroup = allGroups.find((g) => !existingGroupIds.has(g.id));
-        currentGroup = unusedGroup || allGroups.find((g) => g.id === defaultGroupId) || allGroups[0];
-      }
+      // 无论当前代码行是否已存在书签，输入框与分组弹窗均始终预选系统默认组
+      let currentGroup: IBookmarkGroup =
+        allGroups.find((g) => g.id === defaultGroupId) || allGroups[0];
 
       const relPath = storage.normalizeRelativePath(targetUri);
       const lineContent = await getLineContent(relPath, targetLine, targetUri);
