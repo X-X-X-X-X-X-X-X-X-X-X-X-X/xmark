@@ -9,7 +9,6 @@ import {
   IBookmarkStorageSchema
 } from '../types.js';
 
-import { DEFAULT_INSTRUCTIONS } from '../core/bookmarkCore.js';
 
 /*
  * 《核心位置》：书签数据持久化与外部同步管理器 (全面支持多工作区 Multi-root Workspace)
@@ -24,7 +23,6 @@ export class StorageManager implements vscode.Disposable {
   public readonly onDidChangeData = this._onDidChangeData.event;
 
   private schema: IBookmarkStorageSchema = {
-    _instructions: DEFAULT_INSTRUCTIONS,
     version: 1,
     defaultGroupId: DEFAULT_GROUP_ID,
     groups: [{ id: DEFAULT_GROUP_ID, name: DEFAULT_GROUP_NAME, order: 0 }],
@@ -171,7 +169,6 @@ export class StorageManager implements vscode.Disposable {
       : [];
 
     return {
-      _instructions: raw?._instructions || DEFAULT_INSTRUCTIONS,
       version: 1,
       defaultGroupId: DEFAULT_GROUP_ID,
       groups,

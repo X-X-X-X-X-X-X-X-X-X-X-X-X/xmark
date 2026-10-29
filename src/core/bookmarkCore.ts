@@ -13,9 +13,6 @@ import {
 import { computeLineHash } from './hashUtil.js';
 import { getHeadCommit } from './gitHelper.js';
 
-export const DEFAULT_INSTRUCTIONS =
-  '【XMark AI 操作指南 / AI Agent Guidelines】1. 请勿删除此字段与 groups 中的 default 分组；2. 新增书签的 groupId 必须匹配 groups 中的 id；3. filePath 必须使用 POSIX 正斜杠 /；4. lineHash 为目标行去除首尾空格后的 16 位 SHA-256 Hash 值；5. 行号 line 为 1-based 正整数。';
-
 /**
  * 《核心位置》：无宿主依赖的纯 Node.js 书签数据内核管理器
  * 逻辑解释：
@@ -33,7 +30,6 @@ export class BookmarkCore {
     this.workspaceRoot = path.resolve(workspaceRoot);
     this.storageLocation = storageLocation;
     this.schema = {
-      _instructions: DEFAULT_INSTRUCTIONS,
       version: 1,
       defaultGroupId: DEFAULT_GROUP_ID,
       groups: [{ id: DEFAULT_GROUP_ID, name: DEFAULT_GROUP_NAME, order: 0 }],
@@ -148,7 +144,6 @@ export class BookmarkCore {
       : [];
 
     return {
-      _instructions: DEFAULT_INSTRUCTIONS,
       version: 1,
       defaultGroupId: DEFAULT_GROUP_ID,
       groups: groups.map((g, idx) => ({

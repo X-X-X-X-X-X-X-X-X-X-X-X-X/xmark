@@ -33,8 +33,6 @@ export interface IBookmarkGroup {
 }
 
 export interface IBookmarkStorageSchema {
-  /** 供 AI 阅读的规范注释字段 */
-  _instructions?: string;
   /** 数据结构契约版本号 */
   version: 1;
   /** 默认分组 ID */
