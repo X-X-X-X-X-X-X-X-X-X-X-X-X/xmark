@@ -1,11 +1,11 @@
 # xmark-mcp
 
-XMark 书签管理器的 Model Context Protocol (MCP) 服务。
+XMark 书签管理器的 Model Context Protocol (MCP) 服务。  
 允许 AI 编程助手（Cursor、Claude Desktop、Windsurf、Trae 等）通过标准 MCP 协议安全、规范地读写项目书签，自动提取代码行、计算 16 位短哈希与检测代码漂移，并与 VS Code 扩展实时热重载同步。
 
 ---
 
-## 🚀 快速接入配置
+## 🚀 快速接入配置（推荐使用 npx 零安装）
 
 ### 1. Cursor 配置 (`~/.cursor/mcp.json` 或项目 `.cursor/mcp.json`)
 
@@ -13,8 +13,8 @@ XMark 书签管理器的 Model Context Protocol (MCP) 服务。
 {
   "mcpServers": {
     "xmark": {
-      "command": "node",
-      "args": ["<path-to-xmark>/packages/xmark-mcp/dist/index.js", "--workspace", "${workspaceFolder}"]
+      "command": "npx",
+      "args": ["-y", "xmark-mcp", "--workspace", "${workspaceFolder}"]
     }
   }
 }
@@ -26,12 +26,14 @@ XMark 书签管理器的 Model Context Protocol (MCP) 服务。
 {
   "mcpServers": {
     "xmark": {
-      "command": "node",
-      "args": ["<path-to-xmark>/packages/xmark-mcp/dist/index.js", "--workspace", "/absolute/path/to/your/project"]
+      "command": "npx",
+      "args": ["-y", "xmark-mcp", "--workspace", "/absolute/path/to/your/project"]
     }
   }
 }
 ```
+
+> **提示**：如果使用源码本地开发调试，可将 `command` 设为 `node`，并将参数替换为本地 `dist/index.js` 路径。
 
 ---
 
@@ -50,12 +52,18 @@ XMark 书签管理器的 Model Context Protocol (MCP) 服务。
 
 ---
 
-## 📦 本地构建
+## 📦 本地开发与构建
 
 ```bash
 cd packages/xmark-mcp
 npm install
 npm run build
 ```
-产物将生成在 `packages/xmark-mcp/dist/index.js`，为独立自包含的可执行 ESM 脚本。
 
+产物生成在 `dist/index.js`，为独立自包含的可执行 ESM 脚本。
+
+---
+
+## 📄 License
+
+MIT © [xxc](https://github.com/X-X-X-X-X-X-X-X-X-X-X-X-X/xmark)
