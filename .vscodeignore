@@ -6,5 +6,6 @@ esbuild.js
 src/**
 test/**
 docs/**
+packages/**
+**/node_modules/**
 **/*.map
-
