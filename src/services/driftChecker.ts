@@ -1,20 +1,10 @@
-import * as crypto from 'node:crypto';
 import * as fs from 'node:fs';
 import * as readline from 'node:readline';
 import * as vscode from 'vscode';
 import { IBookmark, IDriftStatus } from '../types.js';
+import { computeLineHash } from '../core/hashUtil.js';
 
-/*
- * 《核心位置》：计算代码行的 16 位短 Hash
- * 逻辑解释：
- * 1. 采用 SHA-256 摘要算法，先调用 trim() 规范化去除首尾空白字符与行结束符。
- * 2. 截取前 16 位 16 进制字符串作为对比基准，在保证极低碰撞率的同时大幅压缩存储空间。
- * 3. 规避了因格式化空格或 CRLF/LF 换行符差异导致的误判。
- */
-export function computeLineHash(text: string): string {
-  const normalized = text.trim();
-  return crypto.createHash('sha256').update(normalized).digest('hex').slice(0, 16);
-}
+export { computeLineHash };
 
 /*
  * 《核心位置》：多工作区文件 Uri 解析器

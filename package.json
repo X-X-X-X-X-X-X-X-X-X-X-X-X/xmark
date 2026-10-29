@@ -92,6 +92,11 @@
         "command": "xmark.locateBookmark",
         "title": "%xmark.command.locateBookmark%",
         "icon": "$(target)"
+      },
+      {
+        "command": "xmark.copyCommit",
+        "title": "%xmark.command.copyCommit%",
+        "icon": "$(copy)"
       }
     ],
     "menus": {
@@ -158,6 +163,11 @@
           "command": "xmark.updateBookmarkToCurrent",
           "when": "view == xmarkBookmarkView && viewItem == bookmark:drifted",
           "group": "1_modification"
+        },
+        {
+          "command": "xmark.copyCommit",
+          "when": "view == xmarkBookmarkView && viewItem =~ /^bookmark/",
+          "group": "2_clipboard"
         }
       ]
     },
@@ -185,6 +195,7 @@
     "compile": "tsc -p ./ --noEmit",
     "watch": "tsc -watch -p ./",
     "build": "node esbuild.js",
+    "build:mcp": "node packages/xmark-mcp/esbuild.js",
     "package": "vsce package",
     "publish": "vsce publish"
   },

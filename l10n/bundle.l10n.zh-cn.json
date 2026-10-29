@@ -55,5 +55,8 @@
   "XMark: {0} bookmarks on Line {1} [Some code may have changed]": "XMark: 第 {1} 行包含 {0} 个书签 [部分代码可能已变动]",
   "Right-click line number to manage or add bookmarks": "右键行号区可管理或继续添加书签",
   "Multiple bookmarks on this line. Select one to locate:": "当前行存在多个书签，请选择要定位的书签：",
-  "Locate Bookmark (Line {0})": "定位书签 (第 {0} 行)"
+  "Locate Bookmark (Line {0})": "定位书签 (第 {0} 行)",
+  "Copy Commit Hash": "复制 Commit Hash",
+  "Commit hash copied to clipboard": "Commit Hash 已复制到剪贴板",
+  "No Commit recorded for this bookmark": "该书签未记录 Commit"
 }

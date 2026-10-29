@@ -55,5 +55,8 @@
   "XMark: {0} bookmarks on Line {1} [Some code may have changed]": "XMark: {0} bookmarks on Line {1} [Some code may have changed]",
   "Right-click line number to manage or add bookmarks": "Right-click line number to manage or add bookmarks",
   "Multiple bookmarks on this line. Select one to locate:": "Multiple bookmarks on this line. Select one to locate:",
-  "Locate Bookmark (Line {0})": "Locate Bookmark (Line {0})"
+  "Locate Bookmark (Line {0})": "Locate Bookmark (Line {0})",
+  "Copy Commit Hash": "Copy Commit Hash",
+  "Commit hash copied to clipboard": "Commit hash copied to clipboard",
+  "No Commit recorded for this bookmark": "No Commit recorded for this bookmark"
 }

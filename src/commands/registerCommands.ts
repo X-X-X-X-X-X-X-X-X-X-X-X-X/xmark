@@ -618,4 +618,34 @@ export function registerBookmarkCommands(
       }
     })
   );
+  /*
+   * 《核心位置》：复制书签 Commit Hash 命令
+   * 逻辑解释：
+   * 1. 来源一：Tooltip 悬浮卡片中点击超链接传入具体 commit 字符串。
+   * 2. 来源二：侧边栏书签节点右键菜单触发，传入 BookmarkTreeItem 对象。
+   * 3. 提取后写入系统剪贴板，并通过状态栏轻提示予以反馈。
+   * 隐患点：若书签未记录 commit（如无 git 仓库或未提交），提示用户无 commit 记录。
+   */
+  context.subscriptions.push(
+    vscode.commands.registerCommand('xmark.copyCommit', async (arg?: any) => {
+      let commit = '';
+      if (typeof arg === 'string') {
+        commit = arg;
+      } else if (arg instanceof BookmarkTreeItem && arg.bookmark.commit) {
+        commit = arg.bookmark.commit;
+      }
+
+      if (commit) {
+        await vscode.env.clipboard.writeText(commit);
+        vscode.window.setStatusBarMessage(
+          `$(copy) ${vscode.l10n.t('Commit hash copied to clipboard')}: ${commit.slice(0, 7)}`,
+          2500
+        );
+      } else {
+        vscode.window.showInformationMessage(
+          vscode.l10n.t('No Commit recorded for this bookmark')
+        );
+      }
+    })
+  );
 }

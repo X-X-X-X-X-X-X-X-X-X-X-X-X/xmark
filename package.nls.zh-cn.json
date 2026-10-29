@@ -15,5 +15,6 @@
   "xmark.command.updateBookmarkToCurrent": "更新为当前代码行内容",
   "xmark.configuration.title": "XMark 代码书签配置",
   "xmark.configuration.storageLocation.description": "书签存储文件 (bookmark.json) 存放位置：'.vscode' 目录或工作区根目录 'root'。",
-  "xmark.command.locateBookmark": "定位书签"
+  "xmark.command.locateBookmark": "定位书签",
+  "xmark.command.copyCommit": "复制 Commit Hash"
 }

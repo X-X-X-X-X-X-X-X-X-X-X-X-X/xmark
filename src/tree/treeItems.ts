@@ -54,6 +54,21 @@ export class BookmarkTreeItem extends vscode.TreeItem {
       this.resourceUri = resourceUri;
     }
 
+    /*
+     * 《核心位置》：侧边栏书签项 Tooltip 交互式悬浮提示构造
+     * 逻辑解释：
+     * 1. 采用 MarkdownString 呈现富文本，开启 isTrusted 与 supportThemeIcons。
+     * 2. 包含 [$(copy)](command:xmark.copyCommit?...) 交互式命令链接，VS Code 会将其提升为交互式浮层，鼠标移向浮层时不会消失，且支持一键复制。
+     * 3. 当存在 commit 记录时展示 40 位完整 Commit Hash，无记录时不展示。
+     * 隐患点：Markdown 参数需要通过 JSON.stringify 和 encodeURIComponent 转义，确保参数被 VS Code 命令路由正确反序列化。
+     */
+    let commitSection = '';
+    if (bookmark.commit) {
+      const copyArgs = encodeURIComponent(JSON.stringify([bookmark.commit]));
+      const copyBtn = `[$(copy)](command:xmark.copyCommit?${copyArgs} "${vscode.l10n.t('Copy Commit Hash')}")`;
+      commitSection = `\n- Commit: \`${bookmark.commit}\` ${copyBtn}`;
+    }
+
     if (drift.hasChanged) {
       this.contextValue = 'bookmark:drifted';
       this.iconPath = extensionUri
@@ -65,24 +80,32 @@ export class BookmarkTreeItem extends vscode.TreeItem {
       this.description = `${bookmark.filePath}:${bookmark.line} ${vscode.l10n.t('[Changed]')}`;
 
       const reason = `- ${vscode.l10n.t('Code content hash mismatch')}`;
-      this.tooltip = new vscode.MarkdownString(
-        `⚠️ **${vscode.l10n.t('Code may have changed')}**\n\n${reason}\n\n*${vscode.l10n.t(
+      const md = new vscode.MarkdownString(
+        `⚠️ **${vscode.l10n.t('Code may have changed')}**\n\n${reason}\n- ${vscode.l10n.t(
           'File: {0} (Line {1})',
           bookmark.filePath,
           bookmark.line
-        )}*`
+        )}${commitSection}`
       );
+      md.isTrusted = true;
+      md.supportThemeIcons = true;
+      this.tooltip = md;
     } else {
       this.contextValue = 'bookmark';
       this.iconPath = extensionUri
         ? vscode.Uri.joinPath(extensionUri, 'resources', 'bookmark.svg')
         : new vscode.ThemeIcon('bookmark');
       this.description = `${bookmark.filePath}:${bookmark.line}`;
-      this.tooltip = `${bookmark.name}\n${vscode.l10n.t(
-        'File: {0} (Line {1})',
-        bookmark.filePath,
-        bookmark.line
-      )}`;
+      const md = new vscode.MarkdownString(
+        `🔖 **${bookmark.name}**\n\n- ${vscode.l10n.t(
+          'File: {0} (Line {1})',
+          bookmark.filePath,
+          bookmark.line
+        )}${commitSection}`
+      );
+      md.isTrusted = true;
+      md.supportThemeIcons = true;
+      this.tooltip = md;
     }
 
     // 点击直接跳转至指定行

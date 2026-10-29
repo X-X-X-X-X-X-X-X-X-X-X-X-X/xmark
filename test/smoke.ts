@@ -1,7 +1,7 @@
 import assert from 'node:assert';
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
-import { StandaloneBookmarkManager } from '../src/mcp/standaloneManager.ts';
+import { StandaloneBookmarkManager } from '../src/core/bookmarkCore.ts';
 
 async function runSmokeTest() {
   const testDir = path.resolve(process.cwd(), 'temp_test_workspace');

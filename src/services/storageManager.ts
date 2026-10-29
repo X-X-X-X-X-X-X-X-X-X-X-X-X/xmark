@@ -9,8 +9,7 @@ import {
   IBookmarkStorageSchema
 } from '../types.js';
 
-const DEFAULT_INSTRUCTIONS =
-  '【XMark AI 操作指南 / AI Agent Guidelines】1. 请勿删除此字段与 groups 中的 default 分组；2. 新增书签的 groupId 必须匹配 groups 中的 id；3. filePath 必须使用 POSIX 正斜杠 /；4. lineHash 为目标行去除首尾空格后的 16 位 SHA-256 Hash 值；5. 行号 line 为 1-based 正整数。';
+import { DEFAULT_INSTRUCTIONS } from '../core/bookmarkCore.js';
 
 /*
  * 《核心位置》：书签数据持久化与外部同步管理器 (全面支持多工作区 Multi-root Workspace)
