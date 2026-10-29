@@ -58,5 +58,16 @@
   "Locate Bookmark (Line {0})": "Locate Bookmark (Line {0})",
   "Copy Commit Hash": "Copy Commit Hash",
   "Commit hash copied to clipboard": "Commit hash copied to clipboard",
-  "No Commit recorded for this bookmark": "No Commit recorded for this bookmark"
+  "No Commit recorded for this bookmark": "No Commit recorded for this bookmark",
+  "Bookmark storage migrated to {0} and old file cleaned up": "Bookmark storage migrated to {0} and old file cleaned up",
+  "root directory": "root directory",
+  ".vscode directory": ".vscode directory",
+  "Both old and new locations have a bookmark.json file. How would you like to proceed?": "Both old and new locations have a bookmark.json file. How would you like to proceed?",
+  "Load Existing from New Location": "Load Existing from New Location",
+  "Overwrite New Location with Current Bookmarks": "Overwrite New Location with Current Bookmarks",
+  "Cancel Switch": "Cancel Switch",
+  "Switched to new location bookmarks. Delete old bookmark.json file?": "Switched to new location bookmarks. Delete old bookmark.json file?",
+  "Clean Up Old File": "Clean Up Old File",
+  "Keep Old File": "Keep Old File",
+  "New location overwritten with current bookmarks and old file cleaned up": "New location overwritten with current bookmarks and old file cleaned up"
 }

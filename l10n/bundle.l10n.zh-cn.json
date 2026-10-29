@@ -58,5 +58,16 @@
   "Locate Bookmark (Line {0})": "定位书签 (第 {0} 行)",
   "Copy Commit Hash": "复制 Commit Hash",
   "Commit hash copied to clipboard": "Commit Hash 已复制到剪贴板",
-  "No Commit recorded for this bookmark": "该书签未记录 Commit"
+  "No Commit recorded for this bookmark": "该书签未记录 Commit",
+  "Bookmark storage migrated to {0} and old file cleaned up": "书签文件已迁移至 {0}，并已清理旧位置残留文件",
+  "root directory": "工作区根目录",
+  ".vscode directory": ".vscode 目录",
+  "Both old and new locations have a bookmark.json file. How would you like to proceed?": "新旧两个存储位置均已存在 bookmark.json，请选择处理方式：",
+  "Load Existing from New Location": "载入新位置文件",
+  "Overwrite New Location with Current Bookmarks": "用当前书签覆盖新位置",
+  "Cancel Switch": "取消切换",
+  "Switched to new location bookmarks. Delete old bookmark.json file?": "已载入新位置书签。是否清理旧位置的 bookmark.json 文件？",
+  "Clean Up Old File": "清理旧文件",
+  "Keep Old File": "保留旧文件",
+  "New location overwritten with current bookmarks and old file cleaned up": "已用当前书签覆盖新位置，并清理了旧文件"
 }

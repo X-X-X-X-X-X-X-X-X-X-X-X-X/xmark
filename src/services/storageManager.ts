@@ -33,17 +33,20 @@ export class StorageManager implements vscode.Disposable {
   private isInternalWriting = false;
   private saveTimeout?: NodeJS.Timeout;
   private disposables: vscode.Disposable[] = [];
+  private currentStorageLocation: 'vscode' | 'root' = 'vscode';
+  private isSwitchingLocation = false;
 
   constructor() {
+    const config = vscode.workspace.getConfiguration('xmark');
+    this.currentStorageLocation = config.get<'vscode' | 'root'>('storageLocation', 'vscode');
     this.initWatcher();
     this.loadFromDisk();
 
     // 监听设置变更 (如 storageLocation 改变) 与工作区目录变动
     this.disposables.push(
-      vscode.workspace.onDidChangeConfiguration((e) => {
+      vscode.workspace.onDidChangeConfiguration(async (e) => {
         if (e.affectsConfiguration('xmark.storageLocation')) {
-          this.initWatcher();
-          this.loadFromDisk();
+          await this.handleStorageLocationChange();
         }
       }),
       vscode.workspace.onDidChangeWorkspaceFolders(() => {
@@ -59,8 +62,10 @@ export class StorageManager implements vscode.Disposable {
    * 1. 优先检测 vscode.workspace.workspaceFile (即 .code-workspace 配置文件)。
    *    若存在且为 file 协议，直接使用该配置文件所在的父级目录作为根基准。
    * 2. 若不存在工作区配置文件，则平滑降级使用 workspaceFolders[0] 根目录。
+   * 3. 按指定 location 构建目标文件 Uri。
+   * 隐患点：空工作区（未打开任何目录）将返回 undefined，调用方需做保护。
    */
-  public getStorageUri(): vscode.Uri | undefined {
+  public getStorageUriForLocation(location: 'vscode' | 'root'): vscode.Uri | undefined {
     const workspaceFile = vscode.workspace.workspaceFile;
     let rootUri: vscode.Uri | undefined;
 
@@ -74,13 +79,184 @@ export class StorageManager implements vscode.Disposable {
       return undefined;
     }
 
-    const config = vscode.workspace.getConfiguration('xmark');
-    const location = config.get<string>('storageLocation', 'vscode');
-
     if (location === 'root') {
       return vscode.Uri.joinPath(rootUri, 'bookmark.json');
     }
     return vscode.Uri.joinPath(rootUri, '.vscode', 'bookmark.json');
+  }
+
+  public getStorageUri(): vscode.Uri | undefined {
+    return this.getStorageUriForLocation(this.currentStorageLocation);
+  }
+
+  /**
+   * 《核心位置》：存储位置动态切换、自动迁移与冲突决策
+   * 逻辑解释：
+   * 1. 状态防重：如果当前正在切换流程中，或者配置项值与当前内存所记录的 location 一致，则无需重复执行。
+   * 2. 防抖落盘：若有处于防抖阶段的未写磁盘数据，先立即落盘至旧位置，确保数据一致。
+   * 3. 目标无文件迁移：若新位置尚无 bookmark.json，则将当前书签数据安全写入新位置，并销毁旧 Watcher 后清理旧文件（保持全工程单一真实源），避免残留脏数据。
+   * 4. 冲突判定与决策弹窗：若新旧两处均存在文件，弹出 WarningMessage 供用户选择：载入新位置现有文件、用当前书签覆盖新位置、或取消切换并回退配置。
+   * 隐患点：在没有读写权限的工作区路径下，fs.unlink / fs.writeFile 可能抛错，需完善 try-catch 保护并输出日志。
+   */
+  private async handleStorageLocationChange(): Promise<void> {
+    if (this.isSwitchingLocation) {
+      return;
+    }
+
+    const config = vscode.workspace.getConfiguration('xmark');
+    const newLocation = config.get<'vscode' | 'root'>('storageLocation', 'vscode');
+    if (newLocation === this.currentStorageLocation) {
+      return;
+    }
+
+    // 若有正在防抖倒计时的落盘任务，先强制落盘至旧位置
+    if (this.saveTimeout) {
+      clearTimeout(this.saveTimeout);
+      this.saveTimeout = undefined;
+      await this.flushToDisk();
+    }
+
+    const oldLocation = this.currentStorageLocation;
+    const oldUri = this.getStorageUriForLocation(oldLocation);
+    const newUri = this.getStorageUriForLocation(newLocation);
+
+    if (!oldUri || !newUri) {
+      this.currentStorageLocation = newLocation;
+      this.initWatcher();
+      await this.loadFromDisk();
+      return;
+    }
+
+    const fileExists = async (uri: vscode.Uri): Promise<boolean> => {
+      try {
+        await fs.access(uri.fsPath);
+        return true;
+      } catch {
+        return false;
+      }
+    };
+
+    const oldExists = await fileExists(oldUri);
+    const newExists = await fileExists(newUri);
+
+    // 场景 1：目标新位置不存在 bookmark.json（自动迁移旧数据并清理旧文件）
+    if (!newExists) {
+      if (oldExists) {
+        try {
+          // 先销毁旧监听器，防止删除旧文件时触发 onDidDelete 清空内存书签
+          this.fileWatcher?.dispose();
+          this.fileWatcher = undefined;
+
+          await fs.mkdir(path.dirname(newUri.fsPath), { recursive: true });
+          const content = JSON.stringify(this.schema, null, 2);
+          await fs.writeFile(newUri.fsPath, content, 'utf-8');
+          await fs.unlink(oldUri.fsPath);
+        } catch (err) {
+          console.error('[XMark] 迁移存储文件至新位置失败:', err);
+        }
+
+        const targetName = newLocation === 'root'
+          ? vscode.l10n.t('root directory')
+          : vscode.l10n.t('.vscode directory');
+        vscode.window.showInformationMessage(
+          vscode.l10n.t('Bookmark storage migrated to {0} and old file cleaned up', targetName)
+        );
+      }
+
+      this.currentStorageLocation = newLocation;
+      this.initWatcher();
+      await this.loadFromDisk();
+      return;
+    }
+
+    // 场景 2：新位置已存在，且旧位置不存在（自然切换加载）
+    if (!oldExists) {
+      this.currentStorageLocation = newLocation;
+      this.initWatcher();
+      await this.loadFromDisk();
+      return;
+    }
+
+    // 场景 3：新旧两处均存在文件（冲突判定，弹窗由用户决策）
+    const OPTION_LOAD_NEW = vscode.l10n.t('Load Existing from New Location');
+    const OPTION_OVERWRITE_NEW = vscode.l10n.t('Overwrite New Location with Current Bookmarks');
+    const OPTION_CANCEL = vscode.l10n.t('Cancel Switch');
+
+    const choice = await vscode.window.showWarningMessage(
+      vscode.l10n.t('Both old and new locations have a bookmark.json file. How would you like to proceed?'),
+      OPTION_LOAD_NEW,
+      OPTION_OVERWRITE_NEW,
+      OPTION_CANCEL
+    );
+
+    if (choice === OPTION_LOAD_NEW) {
+      this.currentStorageLocation = newLocation;
+      this.initWatcher();
+      await this.loadFromDisk();
+
+      const CLEAN_OLD = vscode.l10n.t('Clean Up Old File');
+      const KEEP_OLD = vscode.l10n.t('Keep Old File');
+      const cleanChoice = await vscode.window.showInformationMessage(
+        vscode.l10n.t('Switched to new location bookmarks. Delete old bookmark.json file?'),
+        CLEAN_OLD,
+        KEEP_OLD
+      );
+      if (cleanChoice === CLEAN_OLD) {
+        try {
+          await fs.unlink(oldUri.fsPath);
+        } catch (err) {
+          console.warn('[XMark] 删除旧存储文件失败:', err);
+        }
+      }
+    } else if (choice === OPTION_OVERWRITE_NEW) {
+      try {
+        // 先销毁旧监听器，防止删除旧文件时触发 onDidDelete
+        this.fileWatcher?.dispose();
+        this.fileWatcher = undefined;
+
+        await fs.mkdir(path.dirname(newUri.fsPath), { recursive: true });
+        const content = JSON.stringify(this.schema, null, 2);
+        await fs.writeFile(newUri.fsPath, content, 'utf-8');
+        await fs.unlink(oldUri.fsPath);
+      } catch (err) {
+        console.error('[XMark] 覆盖新位置或清理旧文件失败:', err);
+      }
+
+      this.currentStorageLocation = newLocation;
+      this.initWatcher();
+      await this.loadFromDisk();
+
+      vscode.window.showInformationMessage(
+        vscode.l10n.t('New location overwritten with current bookmarks and old file cleaned up')
+      );
+    } else {
+      // 取消或直接关闭弹窗：回退设置
+      await this.rollbackLocationConfig(oldLocation);
+    }
+  }
+
+  /**
+   * 回退 storageLocation 配置到旧值
+   */
+  private async rollbackLocationConfig(oldLocation: 'vscode' | 'root'): Promise<void> {
+    this.isSwitchingLocation = true;
+    try {
+      const config = vscode.workspace.getConfiguration('xmark');
+      const inspect = config.inspect<'vscode' | 'root'>('storageLocation');
+      let target = vscode.ConfigurationTarget.Workspace;
+      if (inspect?.workspaceFolderValue !== undefined) {
+        target = vscode.ConfigurationTarget.WorkspaceFolder;
+      } else if (inspect?.workspaceValue !== undefined) {
+        target = vscode.ConfigurationTarget.Workspace;
+      } else if (inspect?.globalValue !== undefined) {
+        target = vscode.ConfigurationTarget.Global;
+      }
+      await config.update('storageLocation', oldLocation, target);
+    } catch (err) {
+      console.error('[XMark] 回退 storageLocation 配置失败:', err);
+    } finally {
+      this.isSwitchingLocation = false;
+    }
   }
 
   /**
