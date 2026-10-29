@@ -10,32 +10,13 @@ import { DEFAULT_GROUP_ID } from '../../../src/types.js';
 /**
  * 《核心位置》：解析工作区根目录与存储位置配置
  * 逻辑解释：
- * 1. 优先级 1：命令行显式传入的参数 --workspace / -w <path>。
- * 2. 优先级 2：环境变量 XMARK_WORKSPACE。
- * 3. 优先级 3：进程当前工作目录 process.cwd()。
- * 4. 存储路径自动推断：优先沿用已存在的 .vscode/bookmark.json 或根目录 bookmark.json。
- * 隐患点：在未指定有效目录且 cwd 为非代码工程目录时，将在该目录初始化创建书签文件。
+ * 1. 统一以当前进程工作目录 process.cwd() 作为唯一工作区根目录基准。
+ *    杜绝 IDE 文本宏替换（如 ${workspaceFolder}）在多根工作区无法解析导致的字面量目录创建问题。
+ * 2. 存储路径自动推断：若工程根目录下存在 bookmark.json 且不存在 .vscode/bookmark.json，则自动以 root 模式存储，否则默认遵循 .vscode/bookmark.json。
+ * 隐患点：若在非代码工程目录中启动 MCP 进程，将在当前目录初始化 .vscode/bookmark.json。
  */
-function resolveWorkspaceContext(): { workspaceRoot: string; storageLocation: 'vscode' | 'root' } {
-  const args = process.argv.slice(2);
-  let workspaceRoot = '';
-
-  for (let i = 0; i < args.length; i++) {
-    if ((args[i] === '--workspace' || args[i] === '-w') && args[i + 1]) {
-      workspaceRoot = args[i + 1];
-      break;
-    }
-  }
-
-  if (!workspaceRoot && process.env.XMARK_WORKSPACE) {
-    workspaceRoot = process.env.XMARK_WORKSPACE;
-  }
-
-  if (!workspaceRoot) {
-    workspaceRoot = process.cwd();
-  }
-
-  workspaceRoot = path.resolve(workspaceRoot);
+export function resolveWorkspaceContext(): { workspaceRoot: string; storageLocation: 'vscode' | 'root' } {
+  const workspaceRoot = path.resolve(process.cwd());
 
   let storageLocation: 'vscode' | 'root' = 'vscode';
   const rootBookmarkPath = path.join(workspaceRoot, 'bookmark.json');

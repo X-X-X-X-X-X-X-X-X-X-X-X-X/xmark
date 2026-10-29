@@ -51,7 +51,7 @@ XMark 提供了独立的 MCP (Model Context Protocol) 服务端 [`xmark-mcp`](pa
   "mcpServers": {
     "xmark": {
       "command": "npx",
-      "args": ["-y", "xmark-mcp", "--workspace", "${workspaceFolder}"]
+      "args": ["-y", "xmark-mcp"]
     }
   }
 }
@@ -64,7 +64,8 @@ XMark 提供了独立的 MCP (Model Context Protocol) 服务端 [`xmark-mcp`](pa
   "mcpServers": {
     "xmark": {
       "command": "npx",
-      "args": ["-y", "xmark-mcp", "--workspace", "/absolute/path/to/your/project"]
+      "args": ["-y", "xmark-mcp"],
+      "cwd": "/absolute/path/to/your/project"
     }
   }
 }

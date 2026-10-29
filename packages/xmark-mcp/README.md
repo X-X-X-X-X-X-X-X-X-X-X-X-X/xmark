@@ -14,7 +14,7 @@ XMark 书签管理器的 Model Context Protocol (MCP) 服务。
   "mcpServers": {
     "xmark": {
       "command": "npx",
-      "args": ["-y", "xmark-mcp", "--workspace", "${workspaceFolder}"]
+      "args": ["-y", "xmark-mcp"]
     }
   }
 }
@@ -27,7 +27,8 @@ XMark 书签管理器的 Model Context Protocol (MCP) 服务。
   "mcpServers": {
     "xmark": {
       "command": "npx",
-      "args": ["-y", "xmark-mcp", "--workspace", "/absolute/path/to/your/project"]
+      "args": ["-y", "xmark-mcp"],
+      "cwd": "/absolute/path/to/your/project"
     }
   }
 }
