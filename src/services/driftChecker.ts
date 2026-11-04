@@ -7,11 +7,11 @@ import { computeLineHash } from '../core/hashUtil.js';
 export { computeLineHash };
 
 /*
- * 《核心位置》：多工作区文件 Uri 解析器
+ * 《核心位置》：工作区文件 Uri 解析器
  * 逻辑解释：
  * 1. 若外部已传入明确的目标文件 Uri，优先直接使用。
- * 2. 多根工作区下，根据 filePath 的首段文件夹名精准定位对应的子 WorkspaceFolder。
- * 3. 单根工作区下平滑拼接至唯一的根目录。
+ * 2. 若存在多个工作区文件夹，优先匹配实际存在该相对路径文件的子工作区。
+ * 3. 默认拼接至 workspaceFolders[0].uri。
  */
 export function resolveFileUri(filePath: string, targetFileUri?: vscode.Uri): vscode.Uri | undefined {
   if (targetFileUri) {
@@ -24,16 +24,12 @@ export function resolveFileUri(filePath: string, targetFileUri?: vscode.Uri): vs
   }
 
   const normalized = filePath.replace(/\\/g, '/');
-  const isMultiRoot = folders.length > 1 || !!vscode.workspace.workspaceFile;
 
-  if (isMultiRoot) {
-    const slashIndex = normalized.indexOf('/');
-    if (slashIndex !== -1) {
-      const folderName = normalized.slice(0, slashIndex);
-      const subPath = normalized.slice(slashIndex + 1);
-      const matchedFolder = folders.find((f) => f.name === folderName);
-      if (matchedFolder) {
-        return vscode.Uri.joinPath(matchedFolder.uri, subPath);
+  if (folders.length > 1) {
+    for (const folder of folders) {
+      const candidate = vscode.Uri.joinPath(folder.uri, normalized);
+      if (fs.existsSync(candidate.fsPath)) {
+        return candidate;
       }
     }
   }

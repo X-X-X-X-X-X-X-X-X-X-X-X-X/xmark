@@ -60,14 +60,17 @@
   "Commit hash copied to clipboard": "Commit Hash 已复制到剪贴板",
   "No Commit recorded for this bookmark": "该书签未记录 Commit",
   "Bookmark storage migrated to {0} and old file cleaned up": "书签文件已迁移至 {0}，并已清理旧位置残留文件",
-  "root directory": "工作区根目录",
+  "root directory (bookmark.json)": "工作区根目录 (bookmark.json)",
   "~/.xmark directory": "~/.xmark 目录",
   "Both old and new locations have a bookmark file. How would you like to proceed?": "新旧两个存储位置均已存在书签文件，请选择处理方式：",
   "Load Existing from New Location": "载入新位置文件",
   "Overwrite New Location with Current Bookmarks": "用当前书签覆盖新位置",
   "Cancel Switch": "取消切换",
-  "Switched to new location bookmarks. Delete old bookmark file?": "已载入新位置书签。是否清理旧位置的书签文件？",
-  "Clean Up Old File": "清理旧文件",
-  "Keep Old File": "保留旧文件",
-  "New location overwritten with current bookmarks and old file cleaned up": "已用当前书签覆盖新位置，并清理了旧文件"
+  "New location overwritten with current bookmarks and old file cleaned up": "已用当前书签覆盖新位置，并清理了旧文件",
+  "Global Directory (~/.xmark)": "全局目录 (~/.xmark)",
+  "Zero project intrusion, stored in ~/.xmark/{pathHash}.json": "对业务项目零侵入，存储在 ~/.xmark/{pathHash}.json 中",
+  "Workspace Root (bookmark.json)": "工作区根目录 (bookmark.json)",
+  "Stored in workspace root bookmark.json for Git sharing": "存储在当前项目根目录 bookmark.json，便于随 Git 提交共享",
+  "Switch Bookmark Storage Location (Current Workspace)": "切换当前工作区书签存储位置",
+  "Select where bookmarks for this workspace should be stored": "选择当前工作区书签数据的存放位置（仅对当前项目生效）"
 }

@@ -60,14 +60,17 @@
   "Commit hash copied to clipboard": "Commit hash copied to clipboard",
   "No Commit recorded for this bookmark": "No Commit recorded for this bookmark",
   "Bookmark storage migrated to {0} and old file cleaned up": "Bookmark storage migrated to {0} and old file cleaned up",
-  "root directory": "root directory",
+  "root directory (bookmark.json)": "root directory (bookmark.json)",
   "~/.xmark directory": "~/.xmark directory",
   "Both old and new locations have a bookmark file. How would you like to proceed?": "Both old and new locations have a bookmark file. How would you like to proceed?",
   "Load Existing from New Location": "Load Existing from New Location",
   "Overwrite New Location with Current Bookmarks": "Overwrite New Location with Current Bookmarks",
   "Cancel Switch": "Cancel Switch",
-  "Switched to new location bookmarks. Delete old bookmark file?": "Switched to new location bookmarks. Delete old bookmark file?",
-  "Clean Up Old File": "Clean Up Old File",
-  "Keep Old File": "Keep Old File",
-  "New location overwritten with current bookmarks and old file cleaned up": "New location overwritten with current bookmarks and old file cleaned up"
+  "New location overwritten with current bookmarks and old file cleaned up": "New location overwritten with current bookmarks and old file cleaned up",
+  "Global Directory (~/.xmark)": "Global Directory (~/.xmark)",
+  "Zero project intrusion, stored in ~/.xmark/{pathHash}.json": "Zero project intrusion, stored in ~/.xmark/{pathHash}.json",
+  "Workspace Root (bookmark.json)": "Workspace Root (bookmark.json)",
+  "Stored in workspace root bookmark.json for Git sharing": "Stored in workspace root bookmark.json for Git sharing",
+  "Switch Bookmark Storage Location (Current Workspace)": "Switch Bookmark Storage Location (Current Workspace)",
+  "Select where bookmarks for this workspace should be stored": "Select where bookmarks for this workspace should be stored"
 }

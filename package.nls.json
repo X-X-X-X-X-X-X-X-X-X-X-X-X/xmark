@@ -13,8 +13,7 @@
   "xmark.command.renameBookmark": "Rename Bookmark",
   "xmark.command.deleteBookmark": "Delete Bookmark",
   "xmark.command.updateBookmarkToCurrent": "Update to Current Line Content",
-  "xmark.configuration.title": "XMark Code Bookmark",
-  "xmark.configuration.storageLocation.description": "Bookmark storage location: 'global' (~/.xmark directory) or workspace 'root' (bookmark.json).",
   "xmark.command.locateBookmark": "Locate Bookmark",
-  "xmark.command.copyCommit": "Copy Commit Hash"
+  "xmark.command.copyCommit": "Copy Commit Hash",
+  "xmark.command.switchStorageLocation": "Switch Storage Location (Current Workspace)"
 }

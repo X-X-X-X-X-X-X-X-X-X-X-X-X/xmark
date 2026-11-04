@@ -13,8 +13,7 @@
   "xmark.command.renameBookmark": "重命名书签",
   "xmark.command.deleteBookmark": "删除书签",
   "xmark.command.updateBookmarkToCurrent": "更新为当前代码行内容",
-  "xmark.configuration.title": "XMark 代码书签配置",
-  "xmark.configuration.storageLocation.description": "书签存储位置：'global'（用户主目录 ~/.xmark）或工作区根目录 'root'（bookmark.json）。",
   "xmark.command.locateBookmark": "定位书签",
-  "xmark.command.copyCommit": "复制 Commit Hash"
+  "xmark.command.copyCommit": "复制 Commit Hash",
+  "xmark.command.switchStorageLocation": "切换当前工作区存储位置 (~/.xmark ⇄ 项目根目录)"
 }

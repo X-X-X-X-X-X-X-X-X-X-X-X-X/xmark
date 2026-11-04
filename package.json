@@ -97,6 +97,11 @@
         "command": "xmark.copyCommit",
         "title": "%xmark.command.copyCommit%",
         "icon": "$(copy)"
+      },
+      {
+        "command": "xmark.switchStorageLocation",
+        "title": "%xmark.command.switchStorageLocation%",
+        "icon": "$(database)"
       }
     ],
     "menus": {
@@ -131,6 +136,11 @@
           "command": "xmark.refreshView",
           "when": "view == xmarkBookmarkView && workspaceFolderCount > 0",
           "group": "navigation@2"
+        },
+        {
+          "command": "xmark.switchStorageLocation",
+          "when": "view == xmarkBookmarkView && workspaceFolderCount > 0",
+          "group": "1_storage@1"
         }
       ],
       "view/item/context": [
@@ -170,20 +180,6 @@
           "group": "2_clipboard"
         }
       ]
-    },
-    "configuration": {
-      "title": "%xmark.configuration.title%",
-      "properties": {
-        "xmark.storageLocation": {
-          "type": "string",
-          "enum": [
-            "global",
-            "root"
-          ],
-          "default": "global",
-          "description": "%xmark.configuration.storageLocation.description%"
-        }
-      }
     }
   },
   "repository": {

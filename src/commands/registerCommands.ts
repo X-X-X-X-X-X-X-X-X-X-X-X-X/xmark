@@ -4,7 +4,7 @@ import { GitService } from '../services/gitService.js';
 import { computeLineHash, getLineContent } from '../services/driftChecker.js';
 import { BookmarkTreeItem, GroupTreeItem, XMarkTreeItem } from '../tree/treeItems.js';
 import { BookmarkTreeProvider } from '../tree/bookmarkTreeProvider.js';
-import { DEFAULT_GROUP_ID, IBookmark, IBookmarkGroup } from '../types.js';
+import { DEFAULT_GROUP_ID, IBookmark, IBookmarkGroup, StorageLocation } from '../types.js';
 
 /**
  * 辅助函数：根据文件 Uri 和目标行号查找所有对应书签 (多书签场景)
@@ -646,6 +646,53 @@ export function registerBookmarkCommands(
           vscode.l10n.t('No Commit recorded for this bookmark')
         );
       }
+    })
+  );
+
+  /*
+   * 《核心位置》：切换当前工作区书签存储位置命令 (按工作区独立切换 ~/.xmark 与项目根目录)
+   * 逻辑解释：
+   * 1. 读取当前工作区正在使用的存储位置 ('global' 或 'root')。
+   * 2. 弹出 QuickPick 列表直观标示当前激活项，供用户选择目标位置。
+   * 3. 调用 storage.switchStorageLocation 执行单项目安全迁移、旧文件清理与 index.json 更新。
+   */
+  context.subscriptions.push(
+    vscode.commands.registerCommand('xmark.switchStorageLocation', async () => {
+      if (!vscode.workspace.workspaceFolders?.length) {
+        vscode.window.showWarningMessage(
+          vscode.l10n.t('No workspace folder is open. Please open a folder first.')
+        );
+        return;
+      }
+
+      const currentLoc = storage.getStorageLocation();
+      const currentBadge = vscode.l10n.t('(Current)');
+
+      const items: (vscode.QuickPickItem & { location: StorageLocation })[] = [
+        {
+          label: `$(home) ${vscode.l10n.t('Global Directory (~/.xmark)')}`,
+          description: currentLoc === 'global' ? currentBadge : undefined,
+          detail: vscode.l10n.t('Zero project intrusion, stored in ~/.xmark/{pathHash}.json'),
+          location: 'global'
+        },
+        {
+          label: `$(root-folder) ${vscode.l10n.t('Workspace Root (bookmark.json)')}`,
+          description: currentLoc === 'root' ? currentBadge : undefined,
+          detail: vscode.l10n.t('Stored in workspace root bookmark.json for Git sharing'),
+          location: 'root'
+        }
+      ];
+
+      const selected = await vscode.window.showQuickPick(items, {
+        title: vscode.l10n.t('Switch Bookmark Storage Location (Current Workspace)'),
+        placeHolder: vscode.l10n.t('Select where bookmarks for this workspace should be stored')
+      });
+
+      if (!selected || selected.location === currentLoc) {
+        return;
+      }
+
+      await storage.switchStorageLocation(selected.location);
     })
   );
 }
