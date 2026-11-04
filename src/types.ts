@@ -2,6 +2,8 @@
  * XMark 书签核心类型定义
  */
 
+export type StorageLocation = 'global' | 'root';
+
 export interface IBookmark {
   /** 唯一标识符 (例如 bm_1719000000000_abcd) */
   id: string;

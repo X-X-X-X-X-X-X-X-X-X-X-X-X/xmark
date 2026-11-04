@@ -2,7 +2,7 @@
   "name": "xmark",
   "displayName": "%xmark.displayName%",
   "description": "%xmark.description%",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "publisher": "xxc",
   "icon": "resources/icon.png",
   "engines": {
@@ -170,6 +170,20 @@
           "group": "2_clipboard"
         }
       ]
+    },
+    "configuration": {
+      "title": "%xmark.configuration.title%",
+      "properties": {
+        "xmark.storageLocation": {
+          "type": "string",
+          "enum": [
+            "global",
+            "root"
+          ],
+          "default": "global",
+          "description": "%xmark.configuration.storageLocation.description%"
+        }
+      }
     }
   },
   "repository": {

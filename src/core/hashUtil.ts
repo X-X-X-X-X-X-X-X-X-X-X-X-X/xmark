@@ -130,3 +130,46 @@ export async function updateWorkspaceIndex(workspacePath: string): Promise<void>
     await fs.writeFile(indexPath, content, 'utf-8');
   }
 }
+
+/**
+ * 从 ~/.xmark/index.json 中移除指定工作区的索引记录 (如切换至 root 存储模式时调用)
+ */
+export async function removeWorkspaceIndex(workspacePath: string): Promise<void> {
+  const indexPath = getXMarkIndexPath();
+  const { pathHash } = resolveWorkspaceStorageInfo(workspacePath);
+
+  try {
+    const rawContent = await fs.readFile(indexPath, 'utf-8');
+    const parsed = JSON.parse(rawContent);
+    if (!parsed || typeof parsed.workspaces !== 'object' || parsed.workspaces === null) {
+      return;
+    }
+
+    if (!(pathHash in parsed.workspaces)) {
+      return;
+    }
+
+    delete parsed.workspaces[pathHash];
+
+    const indexData: IWorkspaceIndexSchema = {
+      version: 1,
+      workspaces: parsed.workspaces
+    };
+
+    const content = JSON.stringify(indexData, null, 2);
+    const tmpPath = `${indexPath}.${Date.now()}.${Math.random().toString(36).slice(2, 6)}.tmp`;
+    try {
+      await fs.writeFile(tmpPath, content, 'utf-8');
+      await fs.rename(tmpPath, indexPath);
+    } catch {
+      try {
+        await fs.unlink(tmpPath);
+      } catch {
+        // 忽略临时文件清理异常
+      }
+      await fs.writeFile(indexPath, content, 'utf-8');
+    }
+  } catch {
+    // 索引文件不存在时忽略
+  }
+}

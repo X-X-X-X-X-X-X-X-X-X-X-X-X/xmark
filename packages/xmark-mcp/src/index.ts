@@ -5,28 +5,38 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { z } from 'zod';
 import { BookmarkCore } from '../../../src/core/bookmarkCore.js';
 import { computeLineHash } from '../../../src/core/hashUtil.js';
-import { DEFAULT_GROUP_ID } from '../../../src/types.js';
+import { DEFAULT_GROUP_ID, StorageLocation } from '../../../src/types.js';
 
 /**
- * 《核心位置》：解析工作区根目录
+ * 《核心位置》：解析工作区根目录与动态判断存储位置
  * 逻辑解释：
  * 1. 统一以当前进程工作目录 process.cwd() 作为唯一工作区根目录基准，与 VS Code 插件端 workspaceFolders[0] 对齐。
- * 2. 书签存储文件直接映射至 ~/.xmark/{pathHash}.json，对当前工作区目录零侵入。
- * 隐患点：若在非代码工程目录中启动 MCP 进程，将在 ~/.xmark 下创建对应路径哈希的存储文件。
+ * 2. 优先判断工作区根目录下是否存在 bookmark.json：若存在则优先使用 'root' 模式 (bookmark.json)，否则使用 'global' 模式 (~/.xmark/{pathHash}.json)。
+ * 3. 每次工具调用前通过 syncAndLoad(core) 动态刷新存储模式，使得用户在 VS Code 中切换 storageLocation 后 MCP 无需重启即可无缝跟随。
  */
-export function resolveWorkspaceRoot(): string {
-  return path.resolve(process.cwd());
+export function resolveWorkspaceContext(): { workspaceRoot: string; storageLocation: StorageLocation } {
+  const workspaceRoot = path.resolve(process.cwd());
+  const rootBookmarkPath = path.join(workspaceRoot, 'bookmark.json');
+  const storageLocation: StorageLocation = fs.existsSync(rootBookmarkPath) ? 'root' : 'global';
+  return { workspaceRoot, storageLocation };
+}
+
+async function syncAndLoad(core: BookmarkCore): Promise<void> {
+  const rootBookmarkPath = path.join(core.getWorkspaceRoot(), 'bookmark.json');
+  const storageLocation: StorageLocation = fs.existsSync(rootBookmarkPath) ? 'root' : 'global';
+  core.setStorageLocation(storageLocation);
+  await core.load();
 }
 
 async function main() {
-  const workspaceRoot = resolveWorkspaceRoot();
+  const { workspaceRoot, storageLocation } = resolveWorkspaceContext();
 
-  const core = new BookmarkCore(workspaceRoot);
+  const core = new BookmarkCore(workspaceRoot, storageLocation);
   await core.load();
 
   const server = new McpServer({
     name: 'xmark-mcp',
-    version: '0.1.2'
+    version: '0.1.3'
   });
 
   // 1. Tool: list_bookmarks
@@ -40,7 +50,7 @@ async function main() {
       }
     },
     async ({ groupId, checkDrift }) => {
-      await core.load();
+      await syncAndLoad(core);
       const bookmarks = core.getBookmarks(groupId);
 
       if (checkDrift) {
@@ -91,7 +101,7 @@ async function main() {
       }
     },
     async ({ filePath, line, name, groupId, groupName }) => {
-      await core.load();
+      await syncAndLoad(core);
       const normalizedPath = filePath.replace(/\\/g, '/');
 
       const targetLineContent = await core.getLineContent(normalizedPath, line);
@@ -154,7 +164,7 @@ async function main() {
       }
     },
     async ({ id, name, line, groupId, refreshHash }) => {
-      await core.load();
+      await syncAndLoad(core);
       const updated = await core.updateBookmark(id, {
         name,
         line,
@@ -195,7 +205,7 @@ async function main() {
       }
     },
     async ({ id }) => {
-      await core.load();
+      await syncAndLoad(core);
       const success = await core.deleteBookmark(id);
       return {
         content: [
@@ -215,7 +225,7 @@ async function main() {
       description: '获取当前所有书签分组及各组内包含的书签数量'
     },
     async () => {
-      await core.load();
+      await syncAndLoad(core);
       const groups = core.listGroups();
       const result = groups.map((g) => ({
         ...g,
@@ -243,7 +253,7 @@ async function main() {
       }
     },
     async ({ name, id }) => {
-      await core.load();
+      await syncAndLoad(core);
       const group = await core.addGroup(name, id);
       return {
         content: [
@@ -277,7 +287,7 @@ async function main() {
           ]
         };
       }
-      await core.load();
+      await syncAndLoad(core);
       const success = await core.deleteGroup(id);
       return {
         content: [
@@ -303,7 +313,7 @@ async function main() {
       }
     },
     async ({ id }) => {
-      await core.load();
+      await syncAndLoad(core);
       const status = await core.checkDrift(id);
       if (!status) {
         return {
@@ -350,7 +360,7 @@ async function main() {
       mimeType: 'application/json'
     },
     async () => {
-      await core.load();
+      await syncAndLoad(core);
       return {
         contents: [
           {
