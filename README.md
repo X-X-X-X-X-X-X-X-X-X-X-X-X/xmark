@@ -38,6 +38,18 @@
 
 ---
 
+## ⚙️ 插件设置 (Settings)
+
+你可以在 VS Code 设置（`Ctrl+,` / `Cmd+,`）中搜索 `xmark`，或在 `settings.json` 中配置书签存储位置：
+
+| 配置项 | 类型 | 可选值 | 默认值 | 说明 |
+| :--- | :--- | :--- | :--- | :--- |
+| `xmark.storageLocation` | `string` | `"global"` \| `"root"` | `"global"` | 书签文件存储位置：<br/>• `"global"`：统一存放在用户主目录 `~/.xmark/{pathHash}.json`（并由 `~/.xmark/index.json` 维护工作区映射索引），对项目目录**零侵入**；<br/>• `"root"`：存放在当前工作区根目录 `bookmark.json`，便于随 Git 仓库提交与团队共享。 |
+
+> **自动迁移说明**：在设置中切换 `xmark.storageLocation` 时，插件会自动将现有书签数据迁移至新位置并清理旧文件；若新旧位置同时存在书签文件，将弹窗提示由你选择“载入新位置文件”或“用当前书签覆盖”。`xmark-mcp` 服务端也会自动优先检测工作区根目录是否存在 `bookmark.json`，无缝对齐存储位置。
+
+---
+
 ## 🤖 MCP 配置方式 (AI 协同)
 
 XMark 提供了独立的 MCP (Model Context Protocol) 服务端 [`xmark-mcp`](packages/xmark-mcp)，允许 Cursor、Claude Desktop、Windsurf、Trae 等 AI 客户端直接通过标准 MCP 协议读写与校验书签。
