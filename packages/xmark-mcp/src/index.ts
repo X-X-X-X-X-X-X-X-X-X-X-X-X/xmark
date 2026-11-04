@@ -8,31 +8,20 @@ import { computeLineHash } from '../../../src/core/hashUtil.js';
 import { DEFAULT_GROUP_ID } from '../../../src/types.js';
 
 /**
- * 《核心位置》：解析工作区根目录与存储位置配置
+ * 《核心位置》：解析工作区根目录
  * 逻辑解释：
- * 1. 统一以当前进程工作目录 process.cwd() 作为唯一工作区根目录基准。
- *    杜绝 IDE 文本宏替换（如 ${workspaceFolder}）在多根工作区无法解析导致的字面量目录创建问题。
- * 2. 存储路径自动推断：若工程根目录下存在 bookmark.json 且不存在 .vscode/bookmark.json，则自动以 root 模式存储，否则默认遵循 .vscode/bookmark.json。
- * 隐患点：若在非代码工程目录中启动 MCP 进程，将在当前目录初始化 .vscode/bookmark.json。
+ * 1. 统一以当前进程工作目录 process.cwd() 作为唯一工作区根目录基准，与 VS Code 插件端 workspaceFolders[0] 对齐。
+ * 2. 书签存储文件直接映射至 ~/.xmark/{pathHash}.json，对当前工作区目录零侵入。
+ * 隐患点：若在非代码工程目录中启动 MCP 进程，将在 ~/.xmark 下创建对应路径哈希的存储文件。
  */
-export function resolveWorkspaceContext(): { workspaceRoot: string; storageLocation: 'vscode' | 'root' } {
-  const workspaceRoot = path.resolve(process.cwd());
-
-  let storageLocation: 'vscode' | 'root' = 'vscode';
-  const rootBookmarkPath = path.join(workspaceRoot, 'bookmark.json');
-  const vscodeBookmarkPath = path.join(workspaceRoot, '.vscode', 'bookmark.json');
-
-  if (fs.existsSync(rootBookmarkPath) && !fs.existsSync(vscodeBookmarkPath)) {
-    storageLocation = 'root';
-  }
-
-  return { workspaceRoot, storageLocation };
+export function resolveWorkspaceRoot(): string {
+  return path.resolve(process.cwd());
 }
 
 async function main() {
-  const { workspaceRoot, storageLocation } = resolveWorkspaceContext();
+  const workspaceRoot = resolveWorkspaceRoot();
 
-  const core = new BookmarkCore(workspaceRoot, storageLocation);
+  const core = new BookmarkCore(workspaceRoot);
   await core.load();
 
   const server = new McpServer({

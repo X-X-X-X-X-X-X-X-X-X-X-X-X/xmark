@@ -170,20 +170,6 @@
           "group": "2_clipboard"
         }
       ]
-    },
-    "configuration": {
-      "title": "%xmark.configuration.title%",
-      "properties": {
-        "xmark.storageLocation": {
-          "type": "string",
-          "enum": [
-            "vscode",
-            "root"
-          ],
-          "default": "vscode",
-          "description": "%xmark.configuration.storageLocation.description%"
-        }
-      }
     }
   },
   "repository": {

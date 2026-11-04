@@ -19,7 +19,7 @@ async function runMcpCoreTest() {
   await fs.writeFile(dummyFilePath, fileLines.join('\n'), 'utf-8');
 
   console.log('1. 初始化 BookmarkCore...');
-  const core = new BookmarkCore(tempDir, 'vscode');
+  const core = new BookmarkCore(tempDir);
   const initialSchema = await core.load();
   assert.strictEqual(initialSchema.version, 1);
   assert.strictEqual(initialSchema.groups[0].id, 'default');
@@ -83,7 +83,8 @@ async function runMcpCoreTest() {
   assert.strictEqual(deleteBmOk, true);
   assert.strictEqual(core.getBookmarks().length, 0);
 
-  // 清理测试临时目录
+  // 清理测试临时目录与生成的存储文件
+  await fs.rm(core.getStoragePath(), { force: true });
   await fs.rm(tempDir, { recursive: true, force: true });
   console.log('🎉 [XMark MCP Core] 8 项完整功能测试全部通过！');
 }

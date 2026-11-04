@@ -50,5 +50,21 @@ export interface IDriftStatus {
   contentChanged: boolean;
 }
 
+export interface IWorkspaceIndexEntry {
+  /** 规范化后的工作区绝对路径 (统一使用 POSIX 正斜杠 '/') */
+  workspacePath: string;
+  /** 对应的书签存储文件名 (如 a1b2c3d4e5f60123.json) */
+  file: string;
+  /** 最近更新时间戳 (ms) */
+  updatedAt: number;
+}
+
+export interface IWorkspaceIndexSchema {
+  /** 索引结构版本号 */
+  version: 1;
+  /** 以 pathHash 为键的工作区映射表 */
+  workspaces: Record<string, IWorkspaceIndexEntry>;
+}
+
 export const DEFAULT_GROUP_ID = 'default';
 export const DEFAULT_GROUP_NAME = '默认分组';

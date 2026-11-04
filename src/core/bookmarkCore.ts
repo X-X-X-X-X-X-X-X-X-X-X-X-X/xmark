@@ -10,25 +10,27 @@ import {
   IBookmarkStorageSchema,
   IDriftStatus
 } from '../types.js';
-import { computeLineHash } from './hashUtil.js';
+import {
+  computeLineHash,
+  resolveWorkspaceStorageInfo,
+  updateWorkspaceIndex
+} from './hashUtil.js';
 import { getHeadCommit } from './gitHelper.js';
 
 /**
  * 《核心位置》：无宿主依赖的纯 Node.js 书签数据内核管理器
  * 逻辑解释：
  * 1. 抽离自 VS Code 插件宿主环境，供 MCP 服务与 VS Code 插件核心公共复用。
- * 2. 统一管理 bookmark.json 的磁盘加载、增删改查、数据清洗 (sanitize) 与保存逻辑。
+ * 2. 统一将各工作区的书签存储在 ~/.xmark/{pathHash}.json 中，并在 ~/.xmark/index.json 中维护路径映射索引，实现业务项目零侵入。
  * 3. 内置流式代码行读取、SHA-256 哈希计算与代码漂移 (Drift) 检测。
- * 隐患点：并发写入时需避免文件竞争，保存时使用临时文件原子替换或目录自动创建。
+ * 隐患点：并发写入时需避免文件竞争，保存时使用临时文件原子替换并同步刷新 index.json。
  */
 export class BookmarkCore {
   private workspaceRoot: string;
-  private storageLocation: 'vscode' | 'root';
   private schema: IBookmarkStorageSchema;
 
-  constructor(workspaceRoot: string, storageLocation: 'vscode' | 'root' = 'vscode') {
+  constructor(workspaceRoot: string) {
     this.workspaceRoot = path.resolve(workspaceRoot);
-    this.storageLocation = storageLocation;
     this.schema = {
       version: 1,
       defaultGroupId: DEFAULT_GROUP_ID,
@@ -45,18 +47,11 @@ export class BookmarkCore {
     this.workspaceRoot = path.resolve(newRoot);
   }
 
-  public setStorageLocation(loc: 'vscode' | 'root'): void {
-    this.storageLocation = loc;
-  }
-
   /**
-   * 获取存储文件 bookmark.json 的绝对路径
+   * 获取存储文件 ~/.xmark/{pathHash}.json 的绝对路径
    */
   public getStoragePath(): string {
-    if (this.storageLocation === 'root') {
-      return path.join(this.workspaceRoot, 'bookmark.json');
-    }
-    return path.join(this.workspaceRoot, '.vscode', 'bookmark.json');
+    return resolveWorkspaceStorageInfo(this.workspaceRoot).storageFilePath;
   }
 
   /**
@@ -68,10 +63,11 @@ export class BookmarkCore {
       const content = await fs.readFile(filePath, 'utf-8');
       const raw = JSON.parse(content);
       this.schema = this.sanitize(raw);
+      await updateWorkspaceIndex(this.workspaceRoot);
       return this.schema;
     } catch (err: any) {
       if (err.code === 'ENOENT') {
-        // 文件不存在时初始化写入默认结构
+        // 文件不存在时初始化写入默认结构并注册到 index.json
         await this.save();
         return this.schema;
       }
@@ -81,7 +77,7 @@ export class BookmarkCore {
   }
 
   /**
-   * 将当前书签结构持久化到磁盘
+   * 将当前书签结构持久化到磁盘，并同步更新 ~/.xmark/index.json
    */
   public async save(schemaToSave?: IBookmarkStorageSchema): Promise<void> {
     if (schemaToSave) {
@@ -98,7 +94,7 @@ export class BookmarkCore {
     try {
       await fs.writeFile(tmpPath, content, 'utf-8');
       await fs.rename(tmpPath, targetPath);
-    } catch (err) {
+    } catch {
       try {
         await fs.unlink(tmpPath);
       } catch {
@@ -107,6 +103,8 @@ export class BookmarkCore {
       // 降级使用普通写入
       await fs.writeFile(targetPath, content, 'utf-8');
     }
+
+    await updateWorkspaceIndex(this.workspaceRoot);
   }
 
   /**
@@ -433,4 +431,3 @@ export class BookmarkCore {
 }
 
 export { BookmarkCore as StandaloneBookmarkManager };
-
