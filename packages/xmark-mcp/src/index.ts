@@ -26,7 +26,7 @@ async function main() {
 
   const server = new McpServer({
     name: 'xmark-mcp',
-    version: '0.1.0'
+    version: '0.1.2'
   });
 
   // 1. Tool: list_bookmarks
