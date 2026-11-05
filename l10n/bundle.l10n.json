@@ -72,5 +72,7 @@
   "Workspace Root (bookmark.json)": "Workspace Root (bookmark.json)",
   "Stored in workspace root bookmark.json for Git sharing": "Stored in workspace root bookmark.json for Git sharing",
   "Switch Bookmark Storage Location (Current Workspace)": "Switch Bookmark Storage Location (Current Workspace)",
-  "Select where bookmarks for this workspace should be stored": "Select where bookmarks for this workspace should be stored"
+  "Select where bookmarks for this workspace should be stored": "Select where bookmarks for this workspace should be stored",
+  "File path copied to clipboard: {0}": "File path copied to clipboard: {0}",
+  "Relative path copied to clipboard: {0}": "Relative path copied to clipboard: {0}"
 }

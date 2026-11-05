@@ -622,6 +622,71 @@ export function registerBookmarkCommands(
     })
   );
   /*
+   * 《核心位置》：复制书签文件绝对路径命令
+   * 逻辑解释：
+   * 1. 从侧边栏 BookmarkTreeItem 提取目标书签信息。
+   * 2. 调用 storage.resolveFileUri 解析出完整 vscode.Uri 并获取本地系统文件路径 (fsPath)。
+   * 3. 写入系统剪贴板，并通过状态栏轻提示予以用户无干扰反馈。
+   * 隐患点：若书签节点未传递或外部文件已被删除，兜底使用书签中记录的原始 filePath。
+   */
+  context.subscriptions.push(
+    vscode.commands.registerCommand('xmark.copyFilePath', async (arg?: any) => {
+      let bookmark: IBookmark | undefined;
+      if (arg instanceof BookmarkTreeItem) {
+        bookmark = arg.bookmark;
+      } else if (arg && arg.filePath) {
+        bookmark = arg;
+      }
+
+      if (!bookmark) {
+        return;
+      }
+
+      const fileUri = storage.resolveFileUri(bookmark.filePath);
+      const absPath = fileUri ? fileUri.fsPath : bookmark.filePath;
+      await vscode.env.clipboard.writeText(absPath);
+      vscode.window.setStatusBarMessage(
+        `$(copy) ${vscode.l10n.t('File path copied to clipboard: {0}', absPath)}`,
+        2500
+      );
+    })
+  );
+
+  /*
+   * 《核心位置》：复制书签工作区相对路径命令
+   * 逻辑解释：
+   * 1. 从侧边栏 BookmarkTreeItem 提取目标书签信息。
+   * 2. 若文件位于工作区内，通过 storage.normalizeRelativePath 统一转换为 POSIX 正斜杠相对路径。
+   * 3. 若为工作区外部文件（无工作区相对路径），直接降级返回规范化的绝对路径。
+   * 4. 写入系统剪贴板并通过状态栏轻提示反馈。
+   * 隐患点：工作区外绝对路径文件在多平台下斜杠表现不同，统一通过 normalizeRelativePath 处理。
+   */
+  context.subscriptions.push(
+    vscode.commands.registerCommand('xmark.copyRelativePath', async (arg?: any) => {
+      let bookmark: IBookmark | undefined;
+      if (arg instanceof BookmarkTreeItem) {
+        bookmark = arg.bookmark;
+      } else if (arg && arg.filePath) {
+        bookmark = arg;
+      }
+
+      if (!bookmark) {
+        return;
+      }
+
+      const fileUri = storage.resolveFileUri(bookmark.filePath);
+      const relPath = fileUri
+        ? storage.normalizeRelativePath(fileUri)
+        : bookmark.filePath.replace(/\\/g, '/');
+      await vscode.env.clipboard.writeText(relPath);
+      vscode.window.setStatusBarMessage(
+        `$(copy) ${vscode.l10n.t('Relative path copied to clipboard: {0}', relPath)}`,
+        2500
+      );
+    })
+  );
+
+  /*
    * 《核心位置》：复制书签 Commit Hash 命令
    * 逻辑解释：
    * 1. 来源一：Tooltip 悬浮卡片中点击超链接传入具体 commit 字符串。

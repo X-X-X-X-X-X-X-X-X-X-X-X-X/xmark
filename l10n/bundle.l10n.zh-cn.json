@@ -72,5 +72,7 @@
   "Workspace Root (bookmark.json)": "工作区根目录 (bookmark.json)",
   "Stored in workspace root bookmark.json for Git sharing": "存储在当前项目根目录 bookmark.json，便于随 Git 提交共享",
   "Switch Bookmark Storage Location (Current Workspace)": "切换当前工作区书签存储位置",
-  "Select where bookmarks for this workspace should be stored": "选择当前工作区书签数据的存放位置（仅对当前项目生效）"
+  "Select where bookmarks for this workspace should be stored": "选择当前工作区书签数据的存放位置（仅对当前项目生效）",
+  "File path copied to clipboard: {0}": "文件路径已复制到剪贴板: {0}",
+  "Relative path copied to clipboard: {0}": "相对路径已复制到剪贴板: {0}"
 }

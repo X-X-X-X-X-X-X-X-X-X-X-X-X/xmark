@@ -14,6 +14,8 @@
   "xmark.command.deleteBookmark": "Delete Bookmark",
   "xmark.command.updateBookmarkToCurrent": "Update to Current Line Content",
   "xmark.command.locateBookmark": "Locate Bookmark",
+  "xmark.command.copyFilePath": "Copy File Path",
+  "xmark.command.copyRelativePath": "Copy Relative Path",
   "xmark.command.copyCommit": "Copy Commit Hash",
   "xmark.command.switchStorageLocation": "Switch Storage Location (Current Workspace)"
 }

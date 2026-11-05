@@ -94,6 +94,16 @@
         "icon": "$(target)"
       },
       {
+        "command": "xmark.copyFilePath",
+        "title": "%xmark.command.copyFilePath%",
+        "icon": "$(copy)"
+      },
+      {
+        "command": "xmark.copyRelativePath",
+        "title": "%xmark.command.copyRelativePath%",
+        "icon": "$(copy)"
+      },
+      {
         "command": "xmark.copyCommit",
         "title": "%xmark.command.copyCommit%",
         "icon": "$(copy)"
@@ -175,9 +185,19 @@
           "group": "1_modification"
         },
         {
+          "command": "xmark.copyFilePath",
+          "when": "view == xmarkBookmarkView && viewItem =~ /^bookmark/",
+          "group": "2_clipboard@1"
+        },
+        {
+          "command": "xmark.copyRelativePath",
+          "when": "view == xmarkBookmarkView && viewItem =~ /^bookmark/",
+          "group": "2_clipboard@2"
+        },
+        {
           "command": "xmark.copyCommit",
           "when": "view == xmarkBookmarkView && viewItem =~ /^bookmark/",
-          "group": "2_clipboard"
+          "group": "2_clipboard@3"
         }
       ]
     }
