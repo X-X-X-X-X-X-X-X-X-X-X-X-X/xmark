@@ -1,4 +1,5 @@
 import * as fs from 'node:fs';
+import * as path from 'node:path';
 import * as readline from 'node:readline';
 import * as vscode from 'vscode';
 import { IBookmark, IDriftStatus } from '../types.js';
@@ -7,23 +8,28 @@ import { computeLineHash } from '../core/hashUtil.js';
 export { computeLineHash };
 
 /*
- * 《核心位置》：工作区文件 Uri 解析器
+ * 《核心位置》：工作区与外部文件 Uri 解析器
  * 逻辑解释：
  * 1. 若外部已传入明确的目标文件 Uri，优先直接使用。
- * 2. 若存在多个工作区文件夹，优先匹配实际存在该相对路径文件的子工作区。
- * 3. 默认拼接至 workspaceFolders[0].uri。
+ * 2. 优先检测是否为绝对路径（支持 Windows 盘符如 C:/ 或 POSIX 绝对路径 /），若是绝对路径直接解析为 vscode.Uri.file，杜绝外部绝对路径文件拼接工作区根目录导致解析错误。
+ * 3. 若为相对路径且存在多个工作区文件夹，优先匹配实际存在该相对路径文件的子工作区。
+ * 4. 兜底默认拼接至 workspaceFolders[0].uri。
+ * 隐患点：若外部文件已被删除或无法访问，上层流读取需捕获异常并安全返回空字符串。
  */
 export function resolveFileUri(filePath: string, targetFileUri?: vscode.Uri): vscode.Uri | undefined {
   if (targetFileUri) {
     return targetFileUri;
   }
 
+  const normalized = filePath.replace(/\\/g, '/');
+  if (path.isAbsolute(filePath) || path.isAbsolute(normalized) || /^[a-zA-Z]:[\\/]/.test(normalized)) {
+    return vscode.Uri.file(filePath);
+  }
+
   const folders = vscode.workspace.workspaceFolders;
   if (!folders || folders.length === 0) {
     return undefined;
   }
-
-  const normalized = filePath.replace(/\\/g, '/');
 
   if (folders.length > 1) {
     for (const folder of folders) {

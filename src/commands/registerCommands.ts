@@ -23,7 +23,10 @@ function findBookmarksAtPosition(
       return true;
     }
     const bUri = storage.resolveFileUri(b.filePath);
-    return bUri?.fsPath === docUri.fsPath;
+    return (
+      bUri?.fsPath === docUri.fsPath ||
+      (process.platform === 'win32' && bUri?.fsPath.toLowerCase() === docUri.fsPath.toLowerCase())
+    );
   });
 }
 

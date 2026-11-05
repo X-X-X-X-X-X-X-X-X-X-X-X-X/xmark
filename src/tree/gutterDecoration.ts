@@ -98,7 +98,16 @@ export class GutterDecorationManager implements vscode.Disposable {
     }
 
     const relPath = this.storage.normalizeRelativePath(docUri);
-    const bookmarks = this.storage.getBookmarks().filter((b) => b.filePath === relPath);
+    const bookmarks = this.storage.getBookmarks().filter((b) => {
+      if (b.filePath === relPath) {
+        return true;
+      }
+      const bUri = this.storage.resolveFileUri(b.filePath);
+      return (
+        bUri?.fsPath === docUri.fsPath ||
+        (process.platform === 'win32' && bUri?.fsPath.toLowerCase() === docUri.fsPath.toLowerCase())
+      );
+    });
 
     if (bookmarks.length === 0) {
       editor.setDecorations(this.normalDecorationType, []);

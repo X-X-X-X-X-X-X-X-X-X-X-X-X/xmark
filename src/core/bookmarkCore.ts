@@ -176,7 +176,8 @@ export class BookmarkCore {
    */
   public async getLineContent(relFilePath: string, targetLine: number): Promise<string> {
     const normalized = relFilePath.replace(/\\/g, '/');
-    const absolutePath = path.isAbsolute(normalized)
+    const isAbsolute = path.isAbsolute(relFilePath) || path.isAbsolute(normalized) || /^[a-zA-Z]:[\\/]/.test(normalized);
+    const absolutePath = isAbsolute
       ? normalized
       : path.join(this.workspaceRoot, normalized);
 

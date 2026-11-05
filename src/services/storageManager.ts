@@ -435,18 +435,24 @@ export class StorageManager implements vscode.Disposable {
   }
 
   /**
-   * 《核心位置》：将书签相对路径转换为目标文件的准确 vscode.Uri
+   * 《核心位置》：将书签路径转换为目标文件的准确 vscode.Uri (兼容工作区内相对路径与外部绝对路径)
    * 逻辑解释：
-   * 1. 优先在 workspaceFolders 中查找实际存在该相对路径文件的目录（兼容多根工作区下的不同子文件夹）。
-   * 2. 默认拼接至 workspaceFolders[0].uri。
+   * 1. 优先检测路径是否为绝对路径（支持 Windows 盘符如 C:/ 或 POSIX 绝对路径 /），若为绝对路径直接返回 vscode.Uri.file，避免工作区外部文件被错误拼接到工作区根目录下导致文件找不到。
+   * 2. 若为工作区内相对路径，在多根工作区场景下遍历查找实际存在该文件的子工作区目录。
+   * 3. 兜底默认拼接至首个工作区根目录 (folders[0].uri)。
+   * 隐患点：若外部文件后续被系统删除或改名，返回的 Uri 虽合法但物理文件不存在，上层打开时需防范异常。
    */
   public resolveFileUri(relPath: string): vscode.Uri | undefined {
+    const normalized = relPath.replace(/\\/g, '/');
+    if (path.isAbsolute(relPath) || path.isAbsolute(normalized) || /^[a-zA-Z]:[\\/]/.test(normalized)) {
+      return vscode.Uri.file(relPath);
+    }
+
     const folders = vscode.workspace.workspaceFolders;
     if (!folders || folders.length === 0) {
       return undefined;
     }
 
-    const normalized = relPath.replace(/\\/g, '/');
     if (folders.length > 1) {
       for (const folder of folders) {
         const candidate = vscode.Uri.joinPath(folder.uri, normalized);
@@ -538,7 +544,10 @@ export class StorageManager implements vscode.Disposable {
               return true;
             }
             const bUri = this.resolveFileUri(b.filePath);
-            return bUri?.fsPath === uri.fsPath;
+            return (
+              bUri?.fsPath === uri.fsPath ||
+              (process.platform === 'win32' && bUri?.fsPath.toLowerCase() === uri.fsPath.toLowerCase())
+            );
           })
           .map((b) => b.line)
       )
