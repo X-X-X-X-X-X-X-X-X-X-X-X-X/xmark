@@ -8,11 +8,11 @@ import { BookmarkTreeItem, GroupTreeItem, XMarkTreeItem } from './treeItems.js';
  * 《核心位置》：侧边栏书签树视图数据驱动提供者 (支持反向定位与父级回溯)
  * 逻辑解释：
  * 1. 根节点呈现用户自定义与默认的分组列表。
- * 2. 展开分组时，加载组内所有书签，并异步比对当前文件的 Git Commit 及行 Hash。
+ * 2. 展开分组时，通过 Promise.all 并行加载组内所有书签并异步比对当前文件的代码行 Hash。
  * 3. 实现 getParent(element) 契约，支持 TreeView.reveal 自动展开父级分组并滚动高亮定位目标书签。
  * 4. 维护 itemCache 节点引用缓存，保证 reveal 查找与树视图内部节点引用和 id 严格一致。
- * 5. 监听 Storage 与 GitService 事件，实现毫秒级局部刷新与状态同步。
- * 隐患点：数据变更触发 refresh 时必须清空 itemCache，防止陈旧书签引用导致视图状态滞后。
+ * 5. 监听 Storage、GitService 以及文档保存事件 (onDidSaveTextDocument)，实现行号图标与侧边栏列表的毫秒级同步刷新。
+ * 隐患点：数据变更或文档保存触发 refresh 时必须清空 itemCache，防止陈旧书签引用导致视图状态滞后。
  */
 export class BookmarkTreeProvider implements vscode.TreeDataProvider<XMarkTreeItem>, vscode.Disposable {
   private _onDidChangeTreeData = new vscode.EventEmitter<XMarkTreeItem | undefined | void>();
@@ -27,7 +27,12 @@ export class BookmarkTreeProvider implements vscode.TreeDataProvider<XMarkTreeIt
   ) {
     this.disposables.push(
       this.storage.onDidChangeData(() => this.refresh()),
-      this.git.onDidChange(() => this.refresh())
+      this.git.onDidChange(() => this.refresh()),
+      vscode.workspace.onDidSaveTextDocument((doc) => {
+        if (doc.uri.scheme === 'file' && this.storage.getBookmarkedLinesForUri(doc.uri).length > 0) {
+          this.refresh();
+        }
+      })
     );
   }
 
@@ -98,22 +103,22 @@ export class BookmarkTreeProvider implements vscode.TreeDataProvider<XMarkTreeIt
       });
     }
 
-    // 分组展开层级：返回组内的所有书签
+    // 分组展开层级：并行返回组内的所有书签
     if (element instanceof GroupTreeItem) {
       const bookmarks = this.storage.getBookmarks(element.group.id);
 
-      const items: BookmarkTreeItem[] = [];
-      for (const bm of bookmarks) {
-        let item = this.itemCache.get(bm.id);
-        if (!item) {
-          const fileUri = this.storage.resolveFileUri(bm.filePath);
-          const drift = await checkBookmarkDrift(bm, fileUri);
-          item = new BookmarkTreeItem(bm, drift, fileUri, this.extensionUri);
-          this.itemCache.set(bm.id, item);
-        }
-        items.push(item);
-      }
-      return items;
+      return Promise.all(
+        bookmarks.map(async (bm) => {
+          let item = this.itemCache.get(bm.id);
+          if (!item) {
+            const fileUri = this.storage.resolveFileUri(bm.filePath);
+            const drift = await checkBookmarkDrift(bm, fileUri);
+            item = new BookmarkTreeItem(bm, drift, fileUri, this.extensionUri);
+            this.itemCache.set(bm.id, item);
+          }
+          return item;
+        })
+      );
     }
 
     return [];
