@@ -2,7 +2,7 @@
   "name": "xmark",
   "displayName": "%xmark.displayName%",
   "description": "%xmark.description%",
-  "version": "0.2.7",
+  "version": "1.0.0",
   "publisher": "xxc",
   "icon": "resources/icon.png",
   "engines": {
