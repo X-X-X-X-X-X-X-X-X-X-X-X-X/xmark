@@ -30,6 +30,8 @@ export class BookmarkCore {
   private workspaceRoot: string;
   private storageLocation: StorageLocation;
   private schema: IBookmarkStorageSchema;
+  private locationIndex: Map<string, IBookmark> = new Map();
+  private idIndex: Map<string, { type: 'bookmark' | 'group'; data: IBookmark | IBookmarkGroup }> = new Map();
 
   constructor(workspaceRoot: string, storageLocation: StorageLocation = 'global') {
     this.workspaceRoot = path.resolve(workspaceRoot);
@@ -40,6 +42,35 @@ export class BookmarkCore {
       groups: [{ id: DEFAULT_GROUP_ID, name: DEFAULT_GROUP_NAME, order: 0 }],
       bookmarks: []
     };
+    this.rebuildIndexes();
+  }
+
+  /**
+   * 重建内存索引，保障 O(1) 查找性能
+   */
+  private rebuildIndexes(): void {
+    this.locationIndex.clear();
+    this.idIndex.clear();
+
+    for (const group of this.schema.groups) {
+      this.idIndex.set(group.id, { type: 'group', data: group });
+    }
+
+    for (const bm of this.schema.bookmarks) {
+      this.idIndex.set(bm.id, { type: 'bookmark', data: bm });
+      this.locationIndex.set(`${bm.filePath}:${bm.line}`, bm);
+    }
+  }
+
+  /**
+   * 规范化为统一相对工作区的 POSIX 格式路径
+   */
+  public normalizeRelativePath(filePath: string): string {
+    const forwardSlashed = filePath.replace(/\\/g, '/');
+    if (path.isAbsolute(filePath) || /^[a-zA-Z]:\//.test(forwardSlashed)) {
+      return path.relative(this.workspaceRoot, filePath).replace(/\\/g, '/');
+    }
+    return forwardSlashed.replace(/^\.\//, '');
   }
 
   public getWorkspaceRoot(): string {
@@ -77,6 +108,7 @@ export class BookmarkCore {
       const content = await fs.readFile(filePath, 'utf-8');
       const raw = JSON.parse(content);
       this.schema = this.sanitize(raw);
+      this.rebuildIndexes();
       if (this.storageLocation === 'global') {
         await updateWorkspaceIndex(this.workspaceRoot);
       }
@@ -88,6 +120,7 @@ export class BookmarkCore {
         return this.schema;
       }
       console.warn(`[BookmarkCore] 读取 ${filePath} 失败，保留当前状态:`, err.message);
+      this.rebuildIndexes();
       return this.schema;
     }
   }
@@ -99,6 +132,7 @@ export class BookmarkCore {
     if (schemaToSave) {
       this.schema = this.sanitize(schemaToSave);
     }
+    this.rebuildIndexes();
     const targetPath = this.getStoragePath();
     const dir = path.dirname(targetPath);
 
@@ -446,6 +480,67 @@ export class BookmarkCore {
    */
   public getSchema(): IBookmarkStorageSchema {
     return JSON.parse(JSON.stringify(this.schema));
+  }
+
+  /**
+   * 《核心位置》：高性能按文件路径与行号查找书签 (O(1) Map 查找)
+   * 逻辑解释：
+   * 1. 自动将输入路径规范化为相对于 workspaceRoot 的统一 POSIX 相对路径。
+   * 2. 利用内存中的 locationIndex 哈希表以 O(1) 复杂度瞬间定位，避免线性遍历。
+   * 隐患点：若同一行代码被异常添加了多个书签，Map 仅会保留覆盖的最后一个。
+   */
+  public findByLocation(filePath: string, line: number): IBookmark | undefined {
+    const relPath = this.normalizeRelativePath(filePath);
+    return this.locationIndex.get(`${relPath}:${line}`);
+  }
+
+  /**
+   * 《核心位置》：高性能按 ID 查找书签或分组 (O(1) Map 查找)
+   * 逻辑解释：
+   * 1. 使用预构建的 idIndex 双向映射表，同时支持书签 ID 与分组 ID 的极速定位。
+   * 2. 避免分别线性扫描 groups 与 bookmarks 数组。
+   * 隐患点：若存在书签与分组 ID 偶发冲突（概率极低），后遍历的记录会覆盖前者。
+   */
+  public findById(id: string): { type: 'bookmark' | 'group'; data: IBookmark | IBookmarkGroup } | undefined {
+    return this.idIndex.get(id);
+  }
+
+  /**
+   * 《核心位置》：高性能按名称模糊查找书签与分组
+   * 逻辑解释：
+   * 1. 预先统一转为小写并在原字符串上使用原生 String.includes 匹配，免去动态创建正则表达式的编译开销和灾难性回溯。
+   * 2. 支持根据 target 按需只遍历分组或只遍历书签，减少无用循环。
+   * 隐患点：数据量极端庞大（万级以上）时多字段全局遍历仍会耗费 CPU，需配合分页或限制条数。
+   */
+  public searchByName(
+    query: string,
+    target: 'all' | 'bookmark' | 'group' = 'all'
+  ): { bookmarks: IBookmark[]; groups: IBookmarkGroup[] } {
+    const lowerQuery = query.trim().toLowerCase();
+    const resultBookmarks: IBookmark[] = [];
+    const resultGroups: IBookmarkGroup[] = [];
+
+    if (!lowerQuery) {
+      return { bookmarks: [], groups: [] };
+    }
+
+    if (target === 'all' || target === 'group') {
+      for (const group of this.schema.groups) {
+        if (group.name.toLowerCase().includes(lowerQuery)) {
+          resultGroups.push(group);
+        }
+      }
+    }
+
+    if (target === 'all' || target === 'bookmark') {
+      for (const bm of this.schema.bookmarks) {
+        if (bm.name.toLowerCase().includes(lowerQuery)) {
+          resultBookmarks.push(bm);
+        }
+      }
+    }
+
+    return { bookmarks: resultBookmarks, groups: resultGroups };
   }
 }
 

@@ -126,20 +126,22 @@ async function main() {
         autoCompute: true
       });
 
+      /**
+       * 《核心位置》：返回添加成功结果（精简格式）
+       * 逻辑解释：
+       * 1. 避免向调用方 dump 完整书签对象及目标代码行预览，显著减少网络载荷与上下文 Token 占用。
+       * 2. 仅返回成功状态、提示信息与生成的书签 ID，便于客户端后续引用。
+       * 隐患点：若旧版上游客户端依赖返回结构中原有的 bookmark 或 preview 详细字段，直接精简会导致取值 undefined。
+       */
       return {
         content: [
           {
             type: 'text',
             text: JSON.stringify(
               {
+                success: true,
                 message: '书签添加成功',
-                bookmark,
-                preview: {
-                  filePath: bookmark.filePath,
-                  line: bookmark.line,
-                  content: targetLineContent,
-                  lineHash: bookmark.lineHash
-                }
+                id: bookmark.id
               },
               null,
               2
@@ -184,11 +186,25 @@ async function main() {
         };
       }
 
+      /**
+       * 《核心位置》：返回更新成功结果（精简格式）
+       * 逻辑解释：
+       * 1. 精简返回格式，仅返回成功状态、提示信息与被更新的书签 ID，避免传输全量详情。
+       * 隐患点：若旧版上游客户端依赖返回结构中原有的 bookmark 完整属性，直接精简会导致取值 undefined。
+       */
       return {
         content: [
           {
             type: 'text',
-            text: JSON.stringify({ message: '书签更新成功', bookmark: updated }, null, 2)
+            text: JSON.stringify(
+              {
+                success: true,
+                message: '书签更新成功',
+                id: updated.id
+              },
+              null,
+              2
+            )
           }
         ]
       };
@@ -246,20 +262,26 @@ async function main() {
   server.registerTool(
     'create_group',
     {
-      description: '创建新的书签分组',
+      description: '创建新的书签分组 (分组 ID 由系统统一自动生成)',
       inputSchema: {
-        name: z.string().describe('分组显示名称'),
-        id: z.string().optional().describe('可选：自定义分组 ID (缺省自动生成)')
+        name: z.string().describe('分组显示名称')
       }
     },
-    async ({ name, id }) => {
+    async ({ name }) => {
       await syncAndLoad(core);
-      const group = await core.addGroup(name, id);
+      /**
+       * 《核心位置》：创建分组
+       * 逻辑解释：
+       * 1. 分组 ID 统一由底层 BookmarkCore 自动生成（如 group_时间戳_随机串），禁止外部调用方传入自定义 ID。
+       * 2. 避免客户端传入与已有分组冲突的非法或重复 ID，保证全局 ID 唯一性与格式统一。
+       * 隐患点：若外部调用方期望指定固定 ID，移除该参数后外部传入将直接被 schema 校验拦截或忽略。
+       */
+      const group = await core.addGroup(name);
       return {
         content: [
           {
             type: 'text',
-            text: JSON.stringify({ message: '分组创建成功', group }, null, 2)
+            text: JSON.stringify({ success: true, message: '分组创建成功', group }, null, 2)
           }
         ]
       };
@@ -351,7 +373,138 @@ async function main() {
     }
   );
 
-  // 9. Resource: xmark://bookmarks
+  // 9. Tool: get_bookmark_by_location
+  server.registerTool(
+    'get_bookmark_by_location',
+    {
+      description: '按文件路径与行号高性能查找对应书签 (O(1) 索引查询)',
+      inputSchema: {
+        filePath: z.string().describe('代码文件相对路径或绝对路径 (如 src/index.ts)'),
+        line: z.number().int().min(1).describe('代码行号 (1-based)')
+      }
+    },
+    async ({ filePath, line }) => {
+      await syncAndLoad(core);
+      /**
+       * 《核心位置》：按文件路径与行号查找书签
+       * 逻辑解释：
+       * 1. core.findByLocation 内部自动转为统一 POSIX 相对路径，并通过 locationIndex Map 进行 O(1) 极速匹配。
+       * 2. 避免线性遍历全部书签列表。
+       * 隐患点：若同一行存在多个书签覆盖，仅能返回最后索引到的一个。
+       */
+      const bookmark = core.findByLocation(filePath, line);
+      if (!bookmark) {
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify({ found: false, message: '未找到指定位置的书签' }, null, 2)
+            }
+          ]
+        };
+      }
+      return {
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify({ found: true, bookmark }, null, 2)
+          }
+        ]
+      };
+    }
+  );
+
+  // 10. Tool: search_by_name
+  server.registerTool(
+    'search_by_name',
+    {
+      description: '按名称模糊查找书签或分组 (高性能原生子串匹配，支持类型筛选)',
+      inputSchema: {
+        query: z.string().min(1).describe('搜索名称关键词 (大小写不敏感模糊匹配)'),
+        target: z.enum(['all', 'bookmark', 'group']).optional().describe('可选：搜索范围，可选 all(默认) | bookmark | group')
+      }
+    },
+    async ({ query, target = 'all' }) => {
+      await syncAndLoad(core);
+      /**
+       * 《核心位置》：按名称模糊查找书签与分组
+       * 逻辑解释：
+       * 1. core.searchByName 基于原生小写子串匹配，避免动态正则编译与回溯。
+       * 2. 支持 target 过滤，仅扫描目标集合，减少不必要的内存迭代。
+       * 隐患点：搜索关键词为空字符时提前拦截，防止返回全量列表造成无谓开销。
+       */
+      const result = core.searchByName(query, target);
+      return {
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify(
+              {
+                query,
+                target,
+                totalBookmarks: result.bookmarks.length,
+                totalGroups: result.groups.length,
+                bookmarks: result.bookmarks,
+                groups: result.groups
+              },
+              null,
+              2
+            )
+          }
+        ]
+      };
+    }
+  );
+
+  // 11. Tool: get_by_id
+  server.registerTool(
+    'get_by_id',
+    {
+      description: '按唯一 ID 高性能查找书签或分组 (O(1) 索引查询)',
+      inputSchema: {
+        id: z.string().describe('待查找的书签 ID 或分组 ID')
+      }
+    },
+    async ({ id }) => {
+      await syncAndLoad(core);
+      /**
+       * 《核心位置》：按 ID 查找书签或分组
+       * 逻辑解释：
+       * 1. core.findById 通过 idIndex 双向 Map 极速定位，O(1) 返回匹配实体。
+       * 2. 返回结果中带有 type 字段标明是 'bookmark' 还是 'group'。
+       * 隐患点：若 ID 不存在直接返回 found: false，无需抛错。
+       */
+      const entry = core.findById(id);
+      if (!entry) {
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify({ found: false, message: `未找到 ID 为 ${id} 的书签或分组` }, null, 2)
+            }
+          ]
+        };
+      }
+      return {
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify(
+              {
+                found: true,
+                type: entry.type,
+                data: entry.data
+              },
+              null,
+              2
+            )
+          }
+        ]
+      };
+    }
+  );
+
+  // 12. Resource: xmark://bookmarks
   server.registerResource(
     'xmark-bookmarks',
     'xmark://bookmarks',
