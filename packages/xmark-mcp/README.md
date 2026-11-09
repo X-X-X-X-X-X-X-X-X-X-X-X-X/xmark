@@ -7,7 +7,7 @@ XMark 书签管理器的 Model Context Protocol (MCP) 服务。
 
 ## 🚀 快速接入配置（推荐使用 npx 零安装）
 
-### 1. Cursor 配置 (`~/.cursor/mcp.json` 或项目 `.cursor/mcp.json`)
+在任意 MCP 客户端（如 Cursor、Claude Desktop、Windsurf、Trae 等）的配置文件中添加如下通用配置：
 
 ```json
 {
@@ -15,20 +15,6 @@ XMark 书签管理器的 Model Context Protocol (MCP) 服务。
     "xmark": {
       "command": "npx",
       "args": ["-y", "xmark-mcp"]
-    }
-  }
-}
-```
-
-### 2. Claude Desktop 配置 (`claude_desktop_config.json`)
-
-```json
-{
-  "mcpServers": {
-    "xmark": {
-      "command": "npx",
-      "args": ["-y", "xmark-mcp"],
-      "cwd": "/absolute/path/to/your/project"
     }
   }
 }
