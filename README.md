@@ -54,13 +54,11 @@ XMark 支持**按每个工作区独立控制**书签存储位置，既不会污�
 
 ---
 
-## 🤖 MCP 配置方式 (AI 协同)
+## 🤖 MCP 接入 (AI 深度协同)
 
-XMark 提供了独立的 MCP (Model Context Protocol) 服务端 [`xmark-mcp`](packages/xmark-mcp)，允许 Cursor、Claude Desktop、Windsurf、Trae 等 AI 客户端直接通过标准 MCP 协议读写与校验书签。
+XMark 提供了独立的 MCP (Model Context Protocol) 服务端，允许 Cursor、Claude Desktop、Windsurf、Trae 等 AI 编程助手直接通过标准协议读写书签、进行 O(1) 高性能索引检索，并与 VS Code 编辑器实现双向热重载同步。
 
-推荐直接使用 `npx` 零安装接入：
-
-### 1. Cursor 配置 (`~/.cursor/mcp.json` 或项目根目录 `.cursor/mcp.json`)
+在任意 MCP 客户端中添加如下通用配置即可（推荐使用 `npx` 零安装接入）：
 
 ```json
 {
@@ -73,31 +71,7 @@ XMark 提供了独立的 MCP (Model Context Protocol) 服务端 [`xmark-mcp`](pa
 }
 ```
 
-### 2. Claude Desktop 配置 (`claude_desktop_config.json`)
-
-```json
-{
-  "mcpServers": {
-    "xmark": {
-      "command": "npx",
-      "args": ["-y", "xmark-mcp"],
-      "cwd": "/absolute/path/to/your/project"
-    }
-  }
-}
-```
-
-### 3. MCP 核心能力列表
-
-| 工具名称 | 功能描述 |
-| :--- | :--- |
-| `list_bookmarks` | 查询项目所有书签或按分组筛选，可附带检测代码漂移状态 |
-| `add_bookmark` | 在指定文件和行号添加书签，自动提取当前行、计算 16 位 Hash 并持久化落盘 |
-| `update_bookmark` | 更新书签名、行号或分组，支持自动重新计算代码 Hash |
-| `delete_bookmark` | 删除指定书签 |
-| `list_groups` | 获取所有书签分组及各组内包含的书签数量 |
-| `create_group` / `delete_group` | 创建或删除业务书签分组 |
-| `get_drift_status` | 检测指定书签是否发生代码漂移（对比当前代码行 Hash） |
+👉 **查看完整的 MCP 工具清单、详细参数定义与调试指南，请参阅 [xmark-mcp 完整文档](packages/xmark-mcp/README.md)。**
 
 ---
 
