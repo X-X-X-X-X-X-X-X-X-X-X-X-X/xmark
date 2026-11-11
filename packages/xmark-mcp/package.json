@@ -1,6 +1,6 @@
 {
   "name": "xmark-mcp",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Model Context Protocol (MCP) server for XMark bookmark manager",
   "license": "MIT",
   "author": "xxc",

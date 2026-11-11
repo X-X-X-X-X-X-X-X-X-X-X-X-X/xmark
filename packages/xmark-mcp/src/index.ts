@@ -36,7 +36,7 @@ async function main() {
 
   const server = new McpServer({
     name: 'xmark-mcp',
-    version: '1.0.1'
+    version: '1.0.2'
   });
 
   // 1. Tool: list_bookmarks
@@ -288,7 +288,59 @@ async function main() {
     }
   );
 
-  // 7. Tool: delete_group
+  // 7. Tool: update_group
+  server.registerTool(
+    'update_group',
+    {
+      description: '通过分组 ID 更新分组名称',
+      inputSchema: {
+        id: z.string().describe('待更新的分组 ID'),
+        name: z.string().trim().min(1).describe('更新后的分组名称 (不能为空)')
+      }
+    },
+    async ({ id, name }) => {
+      await syncAndLoad(core);
+      /**
+       * 《核心位置》：通过 ID 更新分组名称
+       * 逻辑解释：
+       * 1. 复用底层 BookmarkCore.updateGroup 方法修改指定分组的 name 属性并原子落盘（内部会自动触发 rebuildIndexes 同步内存索引）。
+       * 2. 对入参 name 进行 trim 非空校验，防止写入空白分组名影响侧边栏展示。
+       * 3. 与 update_bookmark 保持一致，仅返回精简状态与 ID，避免返回全量详情。
+       * 隐患点：若传入不存在的分组 ID，返回 isError: true；未限制 default 默认分组改名（与 VS Code 插件端 renameGroup 行为对齐）。
+       */
+      const success = await core.updateGroup(id, { name });
+      if (!success) {
+        return {
+          isError: true,
+          content: [
+            {
+              type: 'text',
+              text: `[XMark MCP] 未找到 ID 为 ${id} 的分组`
+            }
+          ]
+        };
+      }
+
+      return {
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify(
+              {
+                success: true,
+                message: '分组名称更新成功',
+                id
+              },
+              null,
+              2
+            )
+          }
+        ]
+      };
+    }
+  );
+
+  // 8. Tool: delete_group
   server.registerTool(
     'delete_group',
     {
