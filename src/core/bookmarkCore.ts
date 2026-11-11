@@ -206,14 +206,22 @@ export class BookmarkCore {
   }
 
   /**
+   * 将相对或绝对路径解析为本地绝对路径 (兼容 Windows 盘符与 POSIX 路径)
+   */
+  private resolveAbsoluteFilePath(relOrAbsPath: string): string {
+    const normalized = relOrAbsPath.replace(/\\/g, '/');
+    const isAbsolute =
+      path.isAbsolute(relOrAbsPath) ||
+      path.isAbsolute(normalized) ||
+      /^[a-zA-Z]:[\\/]/.test(normalized);
+    return isAbsolute ? path.resolve(relOrAbsPath) : path.join(this.workspaceRoot, normalized);
+  }
+
+  /**
    * 流式按需提取指定文件的目标代码行内容
    */
   public async getLineContent(relFilePath: string, targetLine: number): Promise<string> {
-    const normalized = relFilePath.replace(/\\/g, '/');
-    const isAbsolute = path.isAbsolute(relFilePath) || path.isAbsolute(normalized) || /^[a-zA-Z]:[\\/]/.test(normalized);
-    const absolutePath = isAbsolute
-      ? normalized
-      : path.join(this.workspaceRoot, normalized);
+    const absolutePath = this.resolveAbsoluteFilePath(relFilePath);
 
     if (!fsSync.existsSync(absolutePath)) {
       return '';
@@ -304,7 +312,14 @@ export class BookmarkCore {
         lineHash = hash;
       }
       if (!commit) {
-        commit = await getHeadCommit(this.workspaceRoot);
+        /**
+         * 《核心位置》：按目标文件真实路径获取所属 Git 仓库 Commit Hash
+         * 逻辑解释：
+         * 1. 不再写死使用最外层 this.workspaceRoot，而是传入目标文件的绝对路径，解决多子仓库/嵌套仓库/工作区外文件拿错 Commit 的问题。
+         * 隐患点：若传入尚不存在的文件路径，gitHelper 会逐级向上寻找存在目录；若文件不在任何 Git 仓库中则返回空字符串。
+         */
+        const targetFilePath = this.resolveAbsoluteFilePath(params.filePath);
+        commit = await getHeadCommit(targetFilePath);
       }
     }
 
@@ -348,6 +363,10 @@ export class BookmarkCore {
     if (updates.refreshHash || (updates.line && !updates.lineHash)) {
       const { hash } = await this.getLineContentAndHash(bm.filePath, bm.line);
       bm.lineHash = hash;
+      if (updates.refreshHash && !updates.commit) {
+        const targetFilePath = this.resolveAbsoluteFilePath(bm.filePath);
+        bm.commit = await getHeadCommit(targetFilePath);
+      }
     }
 
     await this.save();

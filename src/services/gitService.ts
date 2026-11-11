@@ -1,22 +1,18 @@
-import * as child_process from 'node:child_process';
-import * as util from 'node:util';
 import * as vscode from 'vscode';
-
-const execFileAsync = util.promisify(child_process.execFile);
+import { getHeadCommit as getHeadCommitByCli } from '../core/gitHelper.js';
 
 /*
- * 《核心位置》：Git 状态检测与提交信息获取 (多工作区细粒度适配)
+ * 《核心位置》：Git 状态检测与提交信息获取 (多根工作区与子仓库精准实时适配)
  * 逻辑解释：
- * 1. 采用 Map 缓存每个子工作区/子仓库的 HEAD Commit，多仓库互不干扰。
- * 2. 优先调用 VS Code 内置 git 扩展 API 获取目标文件的仓库实例。
- * 3. 降级使用 git CLI 时，将 cwd 锁定在目标文件所在的子工作区根目录。
- * 隐患点：某个子目录未初始化 Git 时，需捕获异常并返回空串，不影响其他子工程正常使用。
+ * 1. 摒弃容易受多根扫描深度、盘符大小写及异步刷新延迟影响的 VS Code 内置 Git API 状态读取与内存缓存。
+ * 2. 统一直接复用 gitHelper.getHeadCommit(targetUri.fsPath)，在目标文件真实所在目录实时执行 git rev-parse HEAD，100% 精准匹配多根工作区、嵌套子仓库及外部文件。
+ * 3. 保留 vscode.git 扩展状态监听，仅用于在仓库变化时通知 TreeView 与行号装饰器触发界面刷新。
+ * 隐患点：每次添加或更新书签时会拉起一次轻量 git CLI 进程 (2000ms 超时保护)，高频批量操作不建议在循环中直接串行调用。
  */
 export class GitService implements vscode.Disposable {
   private _onDidChange = new vscode.EventEmitter<void>();
   public readonly onDidChange = this._onDidChange.event;
   private disposables: vscode.Disposable[] = [];
-  private commitCache = new Map<string, string>();
 
   constructor() {
     this.initGitExtensionWatcher();
@@ -33,9 +29,9 @@ export class GitService implements vscode.Disposable {
         if (gitApi) {
           this.disposables.push(
             gitApi.onDidOpenRepository((repo: any) => {
+              this._onDidChange.fire();
               this.disposables.push(
                 repo.state.onDidChange(() => {
-                  this.invalidateCache();
                   this._onDidChange.fire();
                 })
               );
@@ -45,7 +41,6 @@ export class GitService implements vscode.Disposable {
           for (const repo of gitApi.repositories) {
             this.disposables.push(
               repo.state.onDidChange(() => {
-                this.invalidateCache();
                 this._onDidChange.fire();
               })
             );
@@ -53,56 +48,17 @@ export class GitService implements vscode.Disposable {
         }
       }
     } catch (error) {
-      console.warn('[XMark] 初始化 VS Code Git 扩展监听失败，将降级使用 CLI 比对:', error);
+      console.warn('[XMark] 初始化 VS Code Git 扩展监听失败，不影响 Commit 实时获取:', error);
     }
-  }
-
-  public invalidateCache(): void {
-    this.commitCache.clear();
   }
 
   public async getHeadCommit(baseUri?: vscode.Uri): Promise<string> {
-    const targetFolder = baseUri
-      ? vscode.workspace.getWorkspaceFolder(baseUri)?.uri ?? baseUri
-      : vscode.workspace.workspaceFolders?.[0]?.uri;
-
-    if (!targetFolder) {
+    const targetUri = baseUri ?? vscode.workspace.workspaceFolders?.[0]?.uri;
+    if (!targetUri || targetUri.scheme !== 'file') {
       return '';
     }
 
-    const cacheKey = targetFolder.fsPath;
-    if (this.commitCache.has(cacheKey)) {
-      return this.commitCache.get(cacheKey)!;
-    }
-
-    // 1. 优先尝试 VS Code 内置 Git 扩展
-    try {
-      const gitExt = vscode.extensions.getExtension('vscode.git');
-      if (gitExt?.isActive) {
-        const gitApi = gitExt.exports?.getAPI?.(1);
-        const repo = gitApi?.getRepository(targetFolder);
-        const commit = repo?.state?.HEAD?.commit;
-        if (commit) {
-          this.commitCache.set(cacheKey, commit);
-          return commit;
-        }
-      }
-    } catch {
-      // 忽略内置扩展获取错误，进入 CLI 尝试
-    }
-
-    // 2. 降级使用 git CLI
-    try {
-      const { stdout } = await execFileAsync('git', ['rev-parse', 'HEAD'], {
-        cwd: targetFolder.fsPath,
-        timeout: 2000
-      });
-      const commit = stdout.trim();
-      this.commitCache.set(cacheKey, commit);
-      return commit;
-    } catch {
-      return '';
-    }
+    return getHeadCommitByCli(targetUri.fsPath);
   }
 
   public dispose(): void {
