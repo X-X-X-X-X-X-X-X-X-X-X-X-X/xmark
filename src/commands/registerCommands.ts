@@ -717,6 +717,157 @@ export function registerBookmarkCommands(
     })
   );
 
+  /**
+   * 《核心位置》：提取上下文或选中项中的书签列表 (支持单选、多选与分组递归提取)
+   * 逻辑解释：
+   * 1. VS Code TreeView 右键菜单传参规则：第一个参数为右键命中的 item，第二个参数 selection 为所有选中的 items 数组。
+   * 2. 若选中项包含 GroupTreeItem，自动提取该分组名下的全部书签并去重。
+   * 3. 兜底若 selection 为空但存在 treeView.selection，从中解析。
+   * 隐患点：跨分组多选或重复选中相同书签时，使用 Map 按书签 ID 进行去重，保留书签顺序。
+   */
+  function resolveBookmarksFromContext(
+    targetItem?: any,
+    selection?: any[]
+  ): IBookmark[] {
+    const rawItems: any[] = [];
+    if (Array.isArray(selection) && selection.length > 0) {
+      rawItems.push(...selection);
+    } else if (targetItem) {
+      rawItems.push(targetItem);
+    } else if (treeView && treeView.selection.length > 0) {
+      rawItems.push(...treeView.selection);
+    }
+
+    const bookmarkMap = new Map<string, IBookmark>();
+
+    for (const item of rawItems) {
+      if (item instanceof BookmarkTreeItem) {
+        bookmarkMap.set(item.bookmark.id, item.bookmark);
+      } else if (item instanceof GroupTreeItem) {
+        const groupBookmarks = storage.getBookmarks(item.group.id);
+        for (const bm of groupBookmarks) {
+          bookmarkMap.set(bm.id, bm);
+        }
+      }
+    }
+
+    return Array.from(bookmarkMap.values());
+  }
+
+  /**
+   * 《核心位置》：将书签格式化为指定模式的单行文本
+   * 逻辑解释：
+   * 1. 模式 'full'：输出 `书签名 文件路径:行号 commit`（若无 commit 则不输出尾部空格）。
+   * 2. 模式 'location'：仅输出 `文件路径:行号`。
+   * 3. 当 isAbsolute 为 true 时输出绝对路径，为 false 时输出相对路径（POSIX 风格）。
+   * 4. commit 统一截取 7 位短哈希。
+   * 隐患点：书签名称若含有换行符需适当清洗，避免破坏多行文本结构。
+   */
+  function formatBookmarkLine(
+    bm: IBookmark,
+    isAbsolute: boolean,
+    mode: 'full' | 'location'
+  ): string {
+    const fileUri = storage.resolveFileUri(bm.filePath);
+    let resolvedPath: string;
+    if (isAbsolute) {
+      resolvedPath = fileUri ? fileUri.fsPath : bm.filePath;
+    } else {
+      resolvedPath = fileUri
+        ? storage.normalizeRelativePath(fileUri)
+        : bm.filePath.replace(/\\/g, '/');
+    }
+
+    const location = `${resolvedPath}:${bm.line}`;
+    if (mode === 'location') {
+      return location;
+    }
+
+    const cleanName = (bm.name || '').replace(/[\r\n]+/g, ' ').trim();
+    const shortCommit = bm.commit ? bm.commit.slice(0, 7) : '';
+
+    return shortCommit
+      ? `${cleanName} ${location} ${shortCommit}`
+      : `${cleanName} ${location}`;
+  }
+
+  /**
+   * 《核心位置》：批量复制书签到剪贴板公共执行器
+   * 逻辑解释：
+   * 1. 解析目标节点并转换为书签集合。
+   * 2. 依次按要求格式化为单行文本并使用 \n 拼接写入系统剪贴板。
+   * 3. 弹出状态栏轻提示反馈复制的书签总数量。
+   */
+  async function handleCopyBookmarks(
+    targetItem: any,
+    selection: any[] | undefined,
+    isAbsolute: boolean,
+    mode: 'full' | 'location'
+  ): Promise<void> {
+    const bookmarks = resolveBookmarksFromContext(targetItem, selection);
+    if (bookmarks.length === 0) {
+      vscode.window.showInformationMessage(vscode.l10n.t('No bookmarks found to copy'));
+      return;
+    }
+
+    const lines = bookmarks.map((bm) => formatBookmarkLine(bm, isAbsolute, mode));
+    const text = lines.join('\n');
+
+    await vscode.env.clipboard.writeText(text);
+    vscode.window.setStatusBarMessage(
+      `$(copy) ${vscode.l10n.t('{0} bookmark(s) copied to clipboard', bookmarks.length)}`,
+      2500
+    );
+  }
+
+  /*
+   * 《核心位置》：复制书签完整信息 (书签名 相对路径:行号 commit)
+   */
+  context.subscriptions.push(
+    vscode.commands.registerCommand(
+      'xmark.copyBookmarksFullRelative',
+      async (targetItem?: any, selection?: any[]) => {
+        await handleCopyBookmarks(targetItem, selection, false, 'full');
+      }
+    )
+  );
+
+  /*
+   * 《核心位置》：复制书签完整信息 (书签名 绝对路径:行号 commit)
+   */
+  context.subscriptions.push(
+    vscode.commands.registerCommand(
+      'xmark.copyBookmarksFullAbsolute',
+      async (targetItem?: any, selection?: any[]) => {
+        await handleCopyBookmarks(targetItem, selection, true, 'full');
+      }
+    )
+  );
+
+  /*
+   * 《核心位置》：仅复制书签位置 (相对路径:行号)
+   */
+  context.subscriptions.push(
+    vscode.commands.registerCommand(
+      'xmark.copyBookmarksLocationRelative',
+      async (targetItem?: any, selection?: any[]) => {
+        await handleCopyBookmarks(targetItem, selection, false, 'location');
+      }
+    )
+  );
+
+  /*
+   * 《核心位置》：仅复制书签位置 (绝对路径:行号)
+   */
+  context.subscriptions.push(
+    vscode.commands.registerCommand(
+      'xmark.copyBookmarksLocationAbsolute',
+      async (targetItem?: any, selection?: any[]) => {
+        await handleCopyBookmarks(targetItem, selection, true, 'location');
+      }
+    )
+  );
+
   /*
    * 《核心位置》：切换当前工作区书签存储位置命令 (按工作区独立切换 ~/.xmark 与项目根目录)
    * 逻辑解释：

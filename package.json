@@ -2,7 +2,7 @@
   "name": "xmark",
   "displayName": "%xmark.displayName%",
   "description": "%xmark.description%",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "publisher": "xxc",
   "icon": "resources/icon.png",
   "engines": {
@@ -109,6 +109,26 @@
         "icon": "$(copy)"
       },
       {
+        "command": "xmark.copyBookmarksFullRelative",
+        "title": "%xmark.command.copyBookmarksFullRelative%",
+        "icon": "$(copy)"
+      },
+      {
+        "command": "xmark.copyBookmarksFullAbsolute",
+        "title": "%xmark.command.copyBookmarksFullAbsolute%",
+        "icon": "$(copy)"
+      },
+      {
+        "command": "xmark.copyBookmarksLocationRelative",
+        "title": "%xmark.command.copyBookmarksLocationRelative%",
+        "icon": "$(copy)"
+      },
+      {
+        "command": "xmark.copyBookmarksLocationAbsolute",
+        "title": "%xmark.command.copyBookmarksLocationAbsolute%",
+        "icon": "$(copy)"
+      },
+      {
         "command": "xmark.switchStorageLocation",
         "title": "%xmark.command.switchStorageLocation%",
         "icon": "$(database)"
@@ -170,6 +190,26 @@
           "group": "inline@3"
         },
         {
+          "command": "xmark.copyBookmarksFullRelative",
+          "when": "view == xmarkBookmarkView && (viewItem == group || viewItem == group:default)",
+          "group": "2_clipboard@1"
+        },
+        {
+          "command": "xmark.copyBookmarksFullAbsolute",
+          "when": "view == xmarkBookmarkView && (viewItem == group || viewItem == group:default)",
+          "group": "2_clipboard@2"
+        },
+        {
+          "command": "xmark.copyBookmarksLocationRelative",
+          "when": "view == xmarkBookmarkView && (viewItem == group || viewItem == group:default)",
+          "group": "2_clipboard@3"
+        },
+        {
+          "command": "xmark.copyBookmarksLocationAbsolute",
+          "when": "view == xmarkBookmarkView && (viewItem == group || viewItem == group:default)",
+          "group": "2_clipboard@4"
+        },
+        {
           "command": "xmark.renameBookmark",
           "when": "view == xmarkBookmarkView && viewItem =~ /^bookmark/",
           "group": "inline@1"
@@ -185,19 +225,24 @@
           "group": "1_modification"
         },
         {
-          "command": "xmark.copyFilePath",
+          "command": "xmark.copyBookmarksFullRelative",
           "when": "view == xmarkBookmarkView && viewItem =~ /^bookmark/",
           "group": "2_clipboard@1"
         },
         {
-          "command": "xmark.copyRelativePath",
+          "command": "xmark.copyBookmarksFullAbsolute",
           "when": "view == xmarkBookmarkView && viewItem =~ /^bookmark/",
           "group": "2_clipboard@2"
         },
         {
-          "command": "xmark.copyCommit",
+          "command": "xmark.copyBookmarksLocationRelative",
           "when": "view == xmarkBookmarkView && viewItem =~ /^bookmark/",
           "group": "2_clipboard@3"
+        },
+        {
+          "command": "xmark.copyBookmarksLocationAbsolute",
+          "when": "view == xmarkBookmarkView && viewItem =~ /^bookmark/",
+          "group": "2_clipboard@4"
         }
       ]
     }

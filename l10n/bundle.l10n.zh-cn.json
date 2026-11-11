@@ -74,5 +74,7 @@
   "Switch Bookmark Storage Location (Current Workspace)": "切换当前工作区书签存储位置",
   "Select where bookmarks for this workspace should be stored": "选择当前工作区书签数据的存放位置（仅对当前项目生效）",
   "File path copied to clipboard: {0}": "文件路径已复制到剪贴板: {0}",
-  "Relative path copied to clipboard: {0}": "相对路径已复制到剪贴板: {0}"
+  "Relative path copied to clipboard: {0}": "相对路径已复制到剪贴板: {0}",
+  "{0} bookmark(s) copied to clipboard": "已复制 {0} 个书签到剪贴板",
+  "No bookmarks found to copy": "未找到可复制的书签"
 }
