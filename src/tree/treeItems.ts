@@ -38,6 +38,18 @@ export class GroupTreeItem extends vscode.TreeItem {
 }
 
 /**
+ * 格式化书签创建时间戳为可读本地日期时间 (YYYY-MM-DD HH:mm:ss)
+ */
+function formatBookmarkDate(timestamp: number): string {
+  const date = new Date(timestamp);
+  const pad = (n: number): string => String(n).padStart(2, '0');
+  return (
+    `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ` +
+    `${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`
+  );
+}
+
+/**
  * 侧边栏书签树节点
  */
 export class BookmarkTreeItem extends vscode.TreeItem {
@@ -60,13 +72,19 @@ export class BookmarkTreeItem extends vscode.TreeItem {
      * 1. 采用 MarkdownString 呈现富文本，开启 isTrusted 与 supportThemeIcons。
      * 2. 包含 [$(copy)](command:xmark.copyCommit?...) 交互式命令链接，VS Code 会将其提升为交互式浮层，鼠标移向浮层时不会消失，且支持一键复制。
      * 3. 当存在 commit 记录时展示 40 位完整 Commit Hash，无记录时不展示。
-     * 隐患点：Markdown 参数需要通过 JSON.stringify 和 encodeURIComponent 转义，确保参数被 VS Code 命令路由正确反序列化。
+     * 4. 当存在有效 createdAt 时间戳时格式化展示添加日期。
+     * 隐患点：Markdown 参数需要通过 JSON.stringify 和 encodeURIComponent 转义，确保参数被 VS Code 命令路由正确反序列化；createdAt 依赖本地时区渲染。
      */
     let commitSection = '';
     if (bookmark.commit) {
       const copyArgs = encodeURIComponent(JSON.stringify([bookmark.commit]));
       const copyBtn = `[$(copy)](command:xmark.copyCommit?${copyArgs} "${vscode.l10n.t('Copy Commit Hash')}")`;
       commitSection = `\n- Commit: \`${bookmark.commit}\` ${copyBtn}`;
+    }
+
+    let createdAtSection = '';
+    if (typeof bookmark.createdAt === 'number' && Number.isFinite(bookmark.createdAt)) {
+      createdAtSection = `\n- ${vscode.l10n.t('Added: {0}', formatBookmarkDate(bookmark.createdAt))}`;
     }
 
     if (drift.hasChanged) {
@@ -85,7 +103,7 @@ export class BookmarkTreeItem extends vscode.TreeItem {
           'File: {0} (Line {1})',
           bookmark.filePath,
           bookmark.line
-        )}${commitSection}`
+        )}${commitSection}${createdAtSection}`
       );
       md.isTrusted = true;
       md.supportThemeIcons = true;
@@ -101,7 +119,7 @@ export class BookmarkTreeItem extends vscode.TreeItem {
           'File: {0} (Line {1})',
           bookmark.filePath,
           bookmark.line
-        )}${commitSection}`
+        )}${commitSection}${createdAtSection}`
       );
       md.isTrusted = true;
       md.supportThemeIcons = true;

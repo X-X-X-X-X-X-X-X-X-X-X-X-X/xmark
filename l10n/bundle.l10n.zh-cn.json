@@ -76,5 +76,6 @@
   "File path copied to clipboard: {0}": "文件路径已复制到剪贴板: {0}",
   "Relative path copied to clipboard: {0}": "相对路径已复制到剪贴板: {0}",
   "{0} bookmark(s) copied to clipboard": "已复制 {0} 个书签到剪贴板",
-  "No bookmarks found to copy": "未找到可复制的书签"
+  "No bookmarks found to copy": "未找到可复制的书签",
+  "Added: {0}": "添加日期: {0}"
 }
