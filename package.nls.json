@@ -21,5 +21,7 @@
   "xmark.command.copyBookmarksFullAbsolute": "Copy Bookmarks: Name Path:Line Commit (Absolute)",
   "xmark.command.copyBookmarksLocationRelative": "Copy Bookmarks: Path:Line (Relative)",
   "xmark.command.copyBookmarksLocationAbsolute": "Copy Bookmarks: Path:Line (Absolute)",
-  "xmark.command.switchStorageLocation": "Switch Storage Location (Current Workspace)"
+  "xmark.command.switchStorageLocation": "Switch Storage Location (Current Workspace)",
+  "xmark.command.searchBookmarks": "Search Bookmarks",
+  "xmark.command.clearSearchFilter": "Clear Search Filter"
 }

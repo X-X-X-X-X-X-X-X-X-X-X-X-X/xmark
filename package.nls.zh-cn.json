@@ -21,5 +21,7 @@
   "xmark.command.copyBookmarksFullAbsolute": "复制书签 (书签名 绝对路径:行号 Commit)",
   "xmark.command.copyBookmarksLocationRelative": "复制书签位置 (相对路径:行号)",
   "xmark.command.copyBookmarksLocationAbsolute": "复制书签位置 (绝对路径:行号)",
-  "xmark.command.switchStorageLocation": "切换当前工作区存储位置 (~/.xmark ⇄ 项目根目录)"
+  "xmark.command.switchStorageLocation": "切换当前工作区存储位置 (~/.xmark ⇄ 项目根目录)",
+  "xmark.command.searchBookmarks": "搜索书签",
+  "xmark.command.clearSearchFilter": "清除搜索筛选"
 }

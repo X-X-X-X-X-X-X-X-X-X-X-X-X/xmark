@@ -1,31 +1,44 @@
 import * as vscode from 'vscode';
-import { IBookmark, IBookmarkGroup, IDriftStatus } from '../types.js';
+import { DEFAULT_GROUP_ID, DEFAULT_GROUP_NAME, IBookmark, IBookmarkGroup, IDriftStatus } from '../types.js';
+
+/**
+ * 获取分组国际化显示名称 (统一处理默认分组与自定义分组)
+ */
+export function getGroupDisplayName(group?: { id: string; name: string }): string {
+  if (!group) {
+    return '';
+  }
+  return group.id === DEFAULT_GROUP_ID && group.name === DEFAULT_GROUP_NAME
+    ? vscode.l10n.t('Default Group')
+    : group.name;
+}
 
 /**
  * 《核心位置》：侧边栏分组树节点
  * 逻辑解释：
  * 1. 默认分组初始化进入时保持展开 (TreeItemCollapsibleState.Expanded)，其他分组保持折叠 (Collapsed)，保持列表清爽。
- * 2. 默认分组采用 VS Code 原生设计风格：图标使用金色星标 (charts.yellow)，与 QuickPick 选择面板保持统一。
- * 3. 节点描述统一为纯净的数量标示 (count)，去除冗余粗糙的文字标签，保持界面视觉清爽。
- * 4. 悬浮提示 (Tooltip) 中明确指出默认分组状态，兼顾美观与信息传达。
+ * 2. 筛选模式 (传入 filterKey) 下命中分组使用独立的 id 并将状态设为 Expanded，避免 VS Code 沿用历史折叠状态；清除筛选后恢复原 id 与用户折叠偏好。
+ * 3. 默认分组采用 VS Code 原生设计风格：图标使用金色星标 (charts.yellow)，与 QuickPick 选择面板保持统一。
+ * 4. 节点描述统一为纯净的数量标示 (count)，去除冗余粗糙的文字标签，保持界面视觉清爽。
+ * 5. 悬浮提示 (Tooltip) 中明确指出默认分组状态，兼顾美观与信息传达。
  * 隐患点：若用户自定义分组名称包含国际化保留词，需确保显示名称与原始 group.name 解耦。
  */
 export class GroupTreeItem extends vscode.TreeItem {
   constructor(
     public readonly group: IBookmarkGroup,
     public readonly count: number,
-    public readonly isDefault: boolean = false
+    public readonly isDefault: boolean = false,
+    filterKey?: string
   ) {
-    const displayName = group.id === 'default' && group.name === '默认分组'
-      ? vscode.l10n.t('Default Group')
-      : group.name;
+    const displayName = getGroupDisplayName(group);
 
-    const collapsibleState = isDefault
-      ? vscode.TreeItemCollapsibleState.Expanded
-      : vscode.TreeItemCollapsibleState.Collapsed;
+    const collapsibleState =
+      isDefault || Boolean(filterKey)
+        ? vscode.TreeItemCollapsibleState.Expanded
+        : vscode.TreeItemCollapsibleState.Collapsed;
 
     super(displayName, collapsibleState);
-    this.id = `group_${group.id}`;
+    this.id = filterKey ? `group_${group.id}_f_${filterKey}` : `group_${group.id}`;
     this.contextValue = isDefault ? 'group:default' : 'group';
     this.description = `(${count})`;
     this.tooltip = isDefault

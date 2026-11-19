@@ -29,6 +29,7 @@ export function activate(context: vscode.ExtensionContext): void {
     canSelectMany: true,
     showCollapseAll: true
   });
+  treeProvider.attachTreeView(treeView);
 
   registerBookmarkCommands(context, storage, git, treeView, treeProvider);
 

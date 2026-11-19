@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import { StorageManager } from '../services/storageManager.js';
 import { GitService } from '../services/gitService.js';
 import { computeLineHash, getLineContent } from '../services/driftChecker.js';
-import { BookmarkTreeItem, GroupTreeItem, XMarkTreeItem } from '../tree/treeItems.js';
+import { BookmarkTreeItem, GroupTreeItem, XMarkTreeItem, getGroupDisplayName } from '../tree/treeItems.js';
 import { BookmarkTreeProvider } from '../tree/bookmarkTreeProvider.js';
 import { DEFAULT_GROUP_ID, IBookmark, IBookmarkGroup, StorageLocation } from '../types.js';
 
@@ -28,18 +28,6 @@ function findBookmarksAtPosition(
       (process.platform === 'win32' && bUri?.fsPath.toLowerCase() === docUri.fsPath.toLowerCase())
     );
   });
-}
-
-/**
- * 辅助函数：获取分组展示名称 (统一处理国际化默认分组)
- */
-function getGroupDisplayName(group?: { id: string; name: string }): string {
-  if (!group) {
-    return '';
-  }
-  return group.id === DEFAULT_GROUP_ID && group.name === '默认分组'
-    ? vscode.l10n.t('Default Group')
-    : group.name;
 }
 
 /**
@@ -614,6 +602,9 @@ export function registerBookmarkCommands(
       }
 
       if (targetBookmark && treeView && treeProvider) {
+        if (!treeProvider.isBookmarkVisible(targetBookmark.id)) {
+          treeProvider.clearSearchFilter();
+        }
         const item = await treeProvider.findBookmarkTreeItem(targetBookmark.id);
         if (item) {
           await treeView.reveal(item, { select: true, focus: true, expand: true });
@@ -912,6 +903,172 @@ export function registerBookmarkCommands(
       }
 
       await storage.switchStorageLocation(selected.location);
+    })
+  );
+
+  /*
+   * 《核心位置》：侧边栏书签快速搜索与持续筛选命令
+   * 逻辑解释：
+   * 1. 提供 QuickPick 即时综合搜索（支持名称、文件路径:行号、分组名多关键字 AND 匹配），选中书签直接跳转至代码行并在侧边栏展开高亮。
+   * 2. 所有书签项设置 alwaysShow: true，避免 VS Code 内置单字段过滤吞掉跨字段多词匹配结果，确保与侧边栏筛选结果严格一致。
+   * 3. 支持通过右上角按钮或底部操作项将关键字应用为侧边栏持续筛选条件，或一键清除已激活的筛选态。
+   * 4. 选中书签跳转定位时，若该书签被当前旧筛选隐藏，先自动清除筛选再调用 reveal，防止定位失败。
+   * 隐患点：QuickPick 关闭后必须在 onDidHide 中调用 dispose()，防止重复打开造成内存泄漏与事件监听累积。
+   */
+  context.subscriptions.push(
+    vscode.commands.registerCommand('xmark.searchBookmarks', () => {
+      if (!vscode.workspace.workspaceFolders?.length) {
+        vscode.window.showWarningMessage(
+          vscode.l10n.t('No workspace folder is open. Please open a folder first.')
+        );
+        return;
+      }
+
+      if (!treeProvider) {
+        return;
+      }
+
+      const activeFilter = treeProvider.getSearchFilter();
+      if (storage.getBookmarks().length === 0 && !activeFilter) {
+        vscode.window.showInformationMessage(
+          vscode.l10n.t('No bookmarks found in current workspace')
+        );
+        return;
+      }
+
+      interface SearchBookmarkPickItem extends vscode.QuickPickItem {
+        kindType: 'bookmark' | 'applyFilter' | 'clearFilter' | 'separator';
+        bookmark?: IBookmark;
+        filterQuery?: string;
+      }
+
+      const quickPick = vscode.window.createQuickPick<SearchBookmarkPickItem>();
+      quickPick.title = vscode.l10n.t('Search Bookmarks');
+      quickPick.placeholder = vscode.l10n.t(
+        'Search by name, path, or group (Enter to jump, click filter icon to filter sidebar)'
+      );
+      quickPick.matchOnDescription = true;
+      quickPick.matchOnDetail = true;
+
+      const applyFilterButton: vscode.QuickInputButton = {
+        iconPath: new vscode.ThemeIcon('filter'),
+        tooltip: vscode.l10n.t('Apply Filter to Bookmark List')
+      };
+      const clearFilterButton: vscode.QuickInputButton = {
+        iconPath: new vscode.ThemeIcon('clear-all'),
+        tooltip: vscode.l10n.t('Clear Search Filter')
+      };
+      quickPick.buttons = activeFilter
+        ? [applyFilterButton, clearFilterButton]
+        : [applyFilterButton];
+
+      const updateItems = (query: string): void => {
+        const matched = treeProvider.searchBookmarks(query);
+        const items: SearchBookmarkPickItem[] = matched.map((entry) => ({
+          label: `$(bookmark) ${entry.bookmark.name}`,
+          description: `${entry.bookmark.filePath}:${entry.bookmark.line}`,
+          detail: `${entry.isDefaultGroup ? '$(star-full)' : '$(folder)'} ${entry.groupDisplayName}`,
+          alwaysShow: true,
+          kindType: 'bookmark',
+          bookmark: entry.bookmark
+        }));
+
+        const trimmed = query.trim();
+        if (trimmed) {
+          items.push({
+            label: '',
+            kind: vscode.QuickPickItemKind.Separator,
+            kindType: 'separator'
+          });
+          items.push({
+            label: `$(filter) ${vscode.l10n.t('Filter bookmark list by "{0}"', trimmed)}`,
+            description: vscode.l10n.t('{0} match(es)', matched.length),
+            alwaysShow: true,
+            kindType: 'applyFilter',
+            filterQuery: trimmed
+          });
+        } else if (activeFilter) {
+          items.push({
+            label: '',
+            kind: vscode.QuickPickItemKind.Separator,
+            kindType: 'separator'
+          });
+          items.push({
+            label: `$(clear-all) ${vscode.l10n.t('Clear active sidebar filter ("{0}")', activeFilter)}`,
+            alwaysShow: true,
+            kindType: 'clearFilter'
+          });
+        }
+
+        quickPick.items = items;
+      };
+
+      if (activeFilter) {
+        quickPick.value = activeFilter;
+      }
+      updateItems(quickPick.value);
+
+      quickPick.onDidChangeValue((val) => updateItems(val));
+
+      quickPick.onDidTriggerButton((btn) => {
+        if (btn === applyFilterButton) {
+          treeProvider.setSearchFilter(quickPick.value);
+          quickPick.hide();
+        } else if (btn === clearFilterButton) {
+          treeProvider.clearSearchFilter();
+          quickPick.hide();
+        }
+      });
+
+      quickPick.onDidAccept(async () => {
+        const selected = quickPick.selectedItems[0];
+        if (!selected) {
+          return;
+        }
+        quickPick.hide();
+
+        if (selected.kindType === 'applyFilter') {
+          treeProvider.setSearchFilter(selected.filterQuery || '');
+          return;
+        }
+        if (selected.kindType === 'clearFilter') {
+          treeProvider.clearSearchFilter();
+          return;
+        }
+        if (selected.kindType === 'bookmark' && selected.bookmark) {
+          const bm = selected.bookmark;
+          const fileUri = storage.resolveFileUri(bm.filePath);
+          if (fileUri) {
+            const lineIdx = Math.max(0, bm.line - 1);
+            await vscode.commands.executeCommand('vscode.open', fileUri, {
+              selection: new vscode.Range(lineIdx, 0, lineIdx, 0),
+              preview: true
+            });
+          }
+
+          if (!treeProvider.isBookmarkVisible(bm.id)) {
+            treeProvider.clearSearchFilter();
+          }
+          const item = await treeProvider.findBookmarkTreeItem(bm.id);
+          if (item && treeView) {
+            try {
+              await treeView.reveal(item, { select: true, focus: false, expand: true });
+            } catch {
+              // 侧边栏视图未挂载或节点不可见时静默容错
+            }
+          }
+        }
+      });
+
+      quickPick.onDidHide(() => quickPick.dispose());
+      quickPick.show();
+    })
+  );
+
+  // 清除侧边栏书签列表搜索筛选
+  context.subscriptions.push(
+    vscode.commands.registerCommand('xmark.clearSearchFilter', () => {
+      treeProvider?.clearSearchFilter();
     })
   );
 }

@@ -77,5 +77,15 @@
   "Relative path copied to clipboard: {0}": "相对路径已复制到剪贴板: {0}",
   "{0} bookmark(s) copied to clipboard": "已复制 {0} 个书签到剪贴板",
   "No bookmarks found to copy": "未找到可复制的书签",
-  "Added: {0}": "添加日期: {0}"
+  "Added: {0}": "添加日期: {0}",
+  "Search Bookmarks": "搜索书签",
+  "Search by name, path, or group (Enter to jump, click filter icon to filter sidebar)": "输入书签名、路径或分组名搜索（回车跳转，点击右上角漏斗图标筛选侧边栏）",
+  "Apply Filter to Bookmark List": "应用筛选到侧边栏列表",
+  "Clear Search Filter": "清除搜索筛选",
+  "Filter bookmark list by \"{0}\"": "在侧边栏列表中筛选 \"{0}\"",
+  "{0} match(es)": "{0} 个匹配项",
+  "Clear active sidebar filter (\"{0}\")": "清除当前侧边栏筛选 (\"{0}\")",
+  "Filter: \"{0}\" ({1} match(es))": "筛选: \"{0}\"（共 {1} 个匹配项）",
+  "No bookmarks matching \"{0}\"": "未找到匹配 \"{0}\" 的书签",
+  "No bookmarks found in current workspace": "当前工作区暂无书签"
 }

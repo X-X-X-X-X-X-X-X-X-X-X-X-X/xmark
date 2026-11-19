@@ -77,5 +77,15 @@
   "Relative path copied to clipboard: {0}": "Relative path copied to clipboard: {0}",
   "{0} bookmark(s) copied to clipboard": "{0} bookmark(s) copied to clipboard",
   "No bookmarks found to copy": "No bookmarks found to copy",
-  "Added: {0}": "Added: {0}"
+  "Added: {0}": "Added: {0}",
+  "Search Bookmarks": "Search Bookmarks",
+  "Search by name, path, or group (Enter to jump, click filter icon to filter sidebar)": "Search by name, path, or group (Enter to jump, click filter icon to filter sidebar)",
+  "Apply Filter to Bookmark List": "Apply Filter to Bookmark List",
+  "Clear Search Filter": "Clear Search Filter",
+  "Filter bookmark list by \"{0}\"": "Filter bookmark list by \"{0}\"",
+  "{0} match(es)": "{0} match(es)",
+  "Clear active sidebar filter (\"{0}\")": "Clear active sidebar filter (\"{0}\")",
+  "Filter: \"{0}\" ({1} match(es))": "Filter: \"{0}\" ({1} match(es))",
+  "No bookmarks matching \"{0}\"": "No bookmarks matching \"{0}\"",
+  "No bookmarks found in current workspace": "No bookmarks found in current workspace"
 }

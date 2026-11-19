@@ -2,7 +2,7 @@
   "name": "xmark",
   "displayName": "%xmark.displayName%",
   "description": "%xmark.description%",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "publisher": "xxc",
   "icon": "resources/icon.png",
   "engines": {
@@ -132,6 +132,16 @@
         "command": "xmark.switchStorageLocation",
         "title": "%xmark.command.switchStorageLocation%",
         "icon": "$(database)"
+      },
+      {
+        "command": "xmark.searchBookmarks",
+        "title": "%xmark.command.searchBookmarks%",
+        "icon": "$(search)"
+      },
+      {
+        "command": "xmark.clearSearchFilter",
+        "title": "%xmark.command.clearSearchFilter%",
+        "icon": "$(clear-all)"
       }
     ],
     "menus": {
@@ -158,14 +168,24 @@
       ],
       "view/title": [
         {
-          "command": "xmark.addGroup",
+          "command": "xmark.searchBookmarks",
           "when": "view == xmarkBookmarkView && workspaceFolderCount > 0",
           "group": "navigation@1"
         },
         {
+          "command": "xmark.clearSearchFilter",
+          "when": "view == xmarkBookmarkView && workspaceFolderCount > 0 && xmark.hasSearchFilter",
+          "group": "navigation@2"
+        },
+        {
+          "command": "xmark.addGroup",
+          "when": "view == xmarkBookmarkView && workspaceFolderCount > 0",
+          "group": "navigation@3"
+        },
+        {
           "command": "xmark.refreshView",
           "when": "view == xmarkBookmarkView && workspaceFolderCount > 0",
-          "group": "navigation@2"
+          "group": "navigation@4"
         },
         {
           "command": "xmark.switchStorageLocation",
